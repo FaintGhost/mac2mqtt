@@ -80,6 +80,9 @@ type Manager struct {
 	status   Status
 	publish  chan struct{}
 	commands chan commandRequest
+	// mediaRefresh asks the connection's loop, which owns lastMedia, to
+	// read and publish Now Playing again, after a command changed it.
+	mediaRefresh chan struct{}
 
 	publishMu sync.Mutex
 
@@ -107,9 +110,10 @@ func New(opts Options) *Manager {
 		opts.RetryDelay = 2 * time.Second
 	}
 	m := &Manager{
-		opts:     opts,
-		publish:  make(chan struct{}, 1),
-		commands: make(chan commandRequest, 32),
+		opts:         opts,
+		publish:      make(chan struct{}, 1),
+		commands:     make(chan commandRequest, 32),
+		mediaRefresh: make(chan struct{}, 1),
 	}
 	m.status = Status{Phase: PhaseIdle, Broker: opts.Config.BrokerAddress()}
 	return m
@@ -242,6 +246,16 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 			}
 		case <-m.publish:
 			if err := m.publishState(ctx, client); err != nil {
+				m.setPhase(PhaseError, friendlyError(err))
+				return true
+			}
+		case <-m.mediaRefresh:
+			if !m.mediaEnabled() {
+				continue
+			}
+			media := m.opts.Media(ctx)
+			m.lastMedia, m.mediaSet = media, true
+			if err := m.publishMedia(ctx, client, media); err != nil {
 				m.setPhase(PhaseError, friendlyError(err))
 				return true
 			}
@@ -446,12 +460,8 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 	case base + "/media/command", base + "/media/seek":
 		if err = m.mediaControl(commandCtx, req.msg.Topic == base+"/media/seek", payload); err == nil {
 			// The app takes a moment to change; then publish what plays.
-			if sleep(commandCtx, 300*time.Millisecond) && m.mediaEnabled() {
-				media := m.opts.Media(commandCtx)
-				m.lastMedia, m.mediaSet = media, true
-				if pubErr := m.publishMedia(commandCtx, req.client, media); pubErr != nil {
-					m.setLastError(friendlyError(pubErr))
-				}
+			if sleep(commandCtx, 300*time.Millisecond) {
+				m.refreshMedia()
 			}
 		}
 	case base + "/system/command":
@@ -502,10 +512,16 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 		return
 	}
 	// The media player repeats the volume and mute.
-	if m.mediaEnabled() && (strings.Contains(req.msg.Topic, "/volume/") || strings.Contains(req.msg.Topic, "/mute/")) {
-		if pubErr := m.publishMedia(commandCtx, req.client, m.lastMedia); pubErr != nil {
-			m.setLastError(friendlyError(pubErr))
-		}
+	if strings.Contains(req.msg.Topic, "/volume/") || strings.Contains(req.msg.Topic, "/mute/") {
+		m.refreshMedia()
+	}
+}
+
+// refreshMedia asks the connection's loop to publish Now Playing again.
+func (m *Manager) refreshMedia() {
+	select {
+	case m.mediaRefresh <- struct{}{}:
+	default:
 	}
 }
 
