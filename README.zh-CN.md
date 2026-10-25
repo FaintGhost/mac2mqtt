@@ -27,7 +27,12 @@ Liquid Glass），没有 WebView，只有一个小巧的二进制文件。
   [MQTT Media Player](https://github.com/bkbilly/mqtt_media_player) 集成的格式发布，
   并能为不使用 HACS 的用户生成 `universal` 媒体播放器配置。
 - **声音**：在 HA 中设置音量和静音。
-- **屏幕与会话**：屏幕是否锁定，以及空闲时长。
+- **屏幕与显示器**：屏幕是否锁定、显示器是否唤醒、空闲时长；并提供锁屏、
+  关闭/唤醒显示器、让 Mac 睡眠的按钮。
+- **摄像头与麦克风**：是否有应用正在使用（与菜单栏指示灯一致），两秒内上报，
+  可用来在通话时点亮“会议中”灯。
+- **通知与朗读**：Home Assistant 可以在 Mac 上弹出通知或朗读文字。
+- **快捷指令**：在 HA 中运行你的任意快捷指令，可附带文本输入（默认关闭，需手动开启）。
 - **电源与网络**：电源类型；笔记本还有电量和充电状态（Mac mini、Mac Studio 不会创建电池实体）；联网状态。
 - **可靠的 MQTT**：保留状态、带遗嘱的可用性、指数退避重连。关闭某组或修改 Topic 时，
   会清理 HA 中不该再显示的内容。
@@ -70,9 +75,12 @@ xattr -dr com.apple.quarantine /Applications/Mac2MQTT.app
 |---|---|
 | 网络 | 网络连接（二元传感器） |
 | 电源 | 电源类型；笔记本另有电量和充电状态 |
-| 屏幕与会话 | 屏幕锁定（二元传感器）、空闲时长 |
+| 屏幕与会话 | 屏幕锁定、显示器（二元传感器）、空闲时长；锁屏、关闭显示器、唤醒显示器、睡眠按钮 |
+| 摄像头与麦克风 | 摄像头使用中、麦克风使用中（二元传感器） |
 | 声音 | 音量（数值）、静音（开关） |
 | 正在播放 | 播放状态、正在播放（标题，艺人/专辑/应用/进度作为属性）、播放/暂停、下一首、上一首按钮、媒体播放器 |
+| 通知与朗读 | 通知、朗读（`notify`） |
+| 快捷指令（默认关闭） | 运行快捷指令（列出你的快捷指令的下拉选择） |
 | 诊断 | 最后更新、运行时长、应用版本、主机名 |
 
 另有一个始终发布的“刷新”按钮，用于立即上报状态。
@@ -90,7 +98,7 @@ xattr -dr com.apple.quarantine /Applications/Mac2MQTT.app
 
 ## MQTT Topic
 
-Topic 列表、状态文档格式和配置项说明见 [英文 README](README.md#mqtt-topics)。
+Topic 列表、状态文档格式、自动化示例和配置项说明见 [英文 README](README.md#mqtt-topics)。只有已开启的组才会接收对应 Topic 上的命令。
 
 ## 工作原理
 
@@ -99,6 +107,8 @@ Topic 列表、状态文档格式和配置项说明见 [英文 README](README.md
   JavaScript for Automation 脚本来读取信息和发送控制命令。
 - **锁屏状态** 启动时从窗口服务器的会话信息（`ioreg`）读取，之后由锁屏/解锁通知更新。
 - **音量和静音** 使用 macOS 自身的音频设置。
+- **摄像头、麦克风和显示器** 每两秒通过 CoreMediaIO、CoreAudio 和 CoreGraphics
+  读取一次，只询问设备是否被使用，不会录制任何内容，也不需要权限。
 
 ## 开发
 
@@ -132,6 +142,19 @@ Release 工作流会检查 tag 与 `mygo.json` 是否一致，构建 arm64、amd
 - MediaRemote 是私有框架，未来的 macOS 可能会改变它。
 - 暂不发布专辑封面：MediaRemote 只通过 `osascript` 无法调用的接口提供封面。
 - 不支持 TLS 客户端证书。
+
+## 致谢
+
+Mac2MQTT 建立在这些优秀项目之上：
+
+- **[MyGo](https://github.com/egoist/mygo)**（作者 [@egoist](https://github.com/egoist)）：整个应用所用的框架。
+  它的原生 UI 工具包和 Liquid Glass 绘制了窗口里的每一个像素，还提供了菜单栏、
+  登录项、通知、本地化以及 DMG 的构建打包，全部用 Go 实现、无需 cgo。非常棒的框架。
+- [Eclipse Paho MQTT Go 客户端](https://github.com/eclipse-paho/paho.mqtt.golang)：MQTT 连接。
+- [purego](https://github.com/ebitengine/purego)（Ebitengine）：无需 cgo 调用 macOS 框架。
+- [Lucide](https://lucide.dev)：图标（ISC 许可证）。
+- [MQTT Media Player](https://github.com/bkbilly/mqtt_media_player)（bkbilly）：其发现格式让 HA 拥有媒体播放器。
+- [Home Assistant](https://www.home-assistant.io) 及其 MQTT 自动发现。
 
 ## 许可证
 

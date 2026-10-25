@@ -71,6 +71,9 @@ type Options struct {
 	HasBattery bool
 	// Disabled names the groups the user does not publish.
 	Disabled map[string]bool
+	// Shortcuts are the names of the user's shortcuts, which the Run
+	// Shortcut select offers; with none it is left out.
+	Shortcuts []string
 }
 
 const (
@@ -91,6 +94,9 @@ const (
 	stateNetworkOnline = "{% if value_json.network is defined and value_json.network.online is defined and value_json.network.online is not none %}{{ 'ON' if value_json.network.online else 'OFF' }}{% else %}unknown{% endif %}"
 	stateCharging      = "{% if value_json.power is defined and value_json.power.charging is defined and value_json.power.charging is not none %}{{ 'ON' if value_json.power.charging else 'OFF' }}{% else %}unknown{% endif %}"
 	stateLocked        = "{% if value_json.session is defined and value_json.session.locked is defined and value_json.session.locked is not none %}{{ 'ON' if value_json.session.locked else 'OFF' }}{% else %}unknown{% endif %}"
+	stateCamera        = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.camera_in_use else 'OFF' }}{% else %}unknown{% endif %}"
+	stateMicrophone    = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.microphone_in_use else 'OFF' }}{% else %}unknown{% endif %}"
+	stateDisplay       = "{% if value_json.display is defined %}{{ 'ON' if value_json.display.awake else 'OFF' }}{% else %}unknown{% endif %}"
 	stateMuted         = "{% if value_json.audio is defined and value_json.audio.muted is defined and value_json.audio.muted is not none %}{{ 'ON' if value_json.audio.muted else 'OFF' }}{% else %}unknown{% endif %}"
 )
 
@@ -99,6 +105,9 @@ const (
 	GroupNetwork     = "network"
 	GroupPower       = "power"
 	GroupSession     = "session"
+	GroupActivity    = "activity"
+	GroupNotify      = "notifications"
+	GroupShortcuts   = "shortcuts"
 	GroupAudio       = "audio"
 	GroupMedia       = "media"
 	GroupDiagnostics = "diagnostics"
@@ -106,7 +115,7 @@ const (
 
 // Groups lists the groups in the order the app shows them. The Refresh
 // button belongs to none: it is always published.
-var Groups = []string{GroupNetwork, GroupPower, GroupSession, GroupAudio, GroupMedia, GroupDiagnostics}
+var Groups = []string{GroupNetwork, GroupPower, GroupSession, GroupActivity, GroupAudio, GroupMedia, GroupNotify, GroupShortcuts, GroupDiagnostics}
 
 // SystemEntities returns the standard status and control entities exposed by
 // Mac2MQTT, leaving out the groups opts.Disabled names. The order is stable
@@ -119,6 +128,9 @@ func SystemEntities(opts Options) []Entity {
 			continue
 		}
 		if opts.HasBattery == false && (entity.ObjectID == "battery" || entity.ObjectID == "charging") {
+			continue
+		}
+		if entity.ObjectID == "run_shortcut" && len(opts.Shortcuts) == 0 {
 			continue
 		}
 		entities = append(entities, entity)
@@ -179,6 +191,22 @@ func AllEntities(opts Options) []Entity {
 			"unit_of_measurement": "s",
 			"enabled_by_default":  false,
 		}),
+		state(GroupSession, "binary_sensor", "display", "Display", map[string]any{
+			"value_template": stateDisplay,
+			"icon":           "mdi:monitor",
+		}),
+		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "lock_screen", "Lock Screen", "LOCK", "mdi:monitor-lock"),
+		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "display_sleep", "Sleep Display", "DISPLAY_SLEEP", "mdi:monitor-off"),
+		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "display_wake", "Wake Display", "DISPLAY_WAKE", "mdi:monitor-eye"),
+		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "sleep", "Sleep", "SLEEP", "mdi:power-sleep"),
+		state(GroupActivity, "binary_sensor", "camera_in_use", "Camera In Use", map[string]any{
+			"value_template": stateCamera,
+			"icon":           "mdi:webcam",
+		}),
+		state(GroupActivity, "binary_sensor", "microphone_in_use", "Microphone In Use", map[string]any{
+			"value_template": stateMicrophone,
+			"icon":           "mdi:microphone",
+		}),
 		state(GroupAudio, "number", "volume", "Volume", map[string]any{
 			"value_template":      stateVolume,
 			"command_topic":       joinTopic(base, "volume/set"),
@@ -209,10 +237,39 @@ func AllEntities(opts Options) []Entity {
 			"json_attributes_topic": joinTopic(base, "media/attributes"),
 			"icon":                  "mdi:music",
 		}),
-		mediaButton(opts, availabilityTopic, base, "media_play_pause", "Play/Pause", "PLAY_PAUSE", "mdi:play-pause"),
-		mediaButton(opts, availabilityTopic, base, "media_next", "Next Track", "NEXT", "mdi:skip-next"),
-		mediaButton(opts, availabilityTopic, base, "media_previous", "Previous Track", "PREVIOUS", "mdi:skip-previous"),
+		commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_play_pause", "Play/Pause", "PLAY_PAUSE", "mdi:play-pause"),
+		commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_next", "Next Track", "NEXT", "mdi:skip-next"),
+		commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_previous", "Previous Track", "PREVIOUS", "mdi:skip-previous"),
 		mediaPlayer(opts, availabilityTopic, base),
+		{
+			Component: "notify",
+			ObjectID:  "notify",
+			Group:     GroupNotify,
+			Config: withCommonConfig(opts, availabilityTopic, "notify", "Notification", map[string]any{
+				"command_topic": joinTopic(base, "notify"),
+				"icon":          "mdi:message-badge",
+			}),
+		},
+		{
+			Component: "notify",
+			ObjectID:  "say",
+			Group:     GroupNotify,
+			Config: withCommonConfig(opts, availabilityTopic, "say", "Speak", map[string]any{
+				"command_topic": joinTopic(base, "say"),
+				"icon":          "mdi:account-voice",
+			}),
+		},
+		{
+			Component: "select",
+			ObjectID:  "run_shortcut",
+			Group:     GroupShortcuts,
+			Config: withCommonConfig(opts, availabilityTopic, "run_shortcut", "Run Shortcut", map[string]any{
+				"command_topic": joinTopic(base, "shortcut/run"),
+				"options":       append([]string(nil), opts.Shortcuts...),
+				"optimistic":    true,
+				"icon":          "mdi:apple",
+			}),
+		},
 		state(GroupDiagnostics, "sensor", "last_update", "Last Update", map[string]any{
 			"value_template": stateLastSeen,
 			"device_class":   "timestamp",
@@ -242,14 +299,15 @@ func AllEntities(opts Options) []Entity {
 	}
 }
 
-// mediaButton is a button sending a command to the Now Playing app.
-func mediaButton(opts Options, availabilityTopic, base, objectID, name, command, icon string) Entity {
+// commandButton is a button sending a command to one of the app's
+// command topics.
+func commandButton(opts Options, availabilityTopic, base, group, topic, objectID, name, command, icon string) Entity {
 	return Entity{
 		Component: "button",
 		ObjectID:  objectID,
-		Group:     GroupMedia,
+		Group:     group,
 		Config: withCommonConfig(opts, availabilityTopic, objectID, name, map[string]any{
-			"command_topic": joinTopic(base, "media/command"),
+			"command_topic": joinTopic(base, topic),
 			"payload_press": command,
 			"icon":          icon,
 		}),

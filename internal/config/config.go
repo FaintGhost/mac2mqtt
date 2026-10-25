@@ -52,35 +52,69 @@ type HomeAssistant struct {
 	// DisabledGroups names the entity groups not published. Listing what
 	// is off rather than on publishes groups added later by default.
 	DisabledGroups []string `json:"disabled_groups,omitempty"`
+	// EnabledGroups names the groups of OptInGroups that are published.
+	EnabledGroups []string `json:"enabled_groups,omitempty"`
 }
 
-// Disabled returns the set of entity groups not published.
+// OptInGroups are the entity groups published only when the user turns
+// them on: running shortcuts lets anyone who can publish to the broker run
+// them. They are homeassistant's group names.
+var OptInGroups = map[string]bool{"shortcuts": true}
+
+// Disabled returns the set of entity groups not published, of those the
+// configuration names and the opt-in ones.
 func (h HomeAssistant) Disabled() map[string]bool {
-	out := make(map[string]bool, len(h.DisabledGroups))
+	out := make(map[string]bool, len(h.DisabledGroups)+len(OptInGroups))
 	for _, group := range h.DisabledGroups {
 		out[group] = true
+	}
+	for group := range OptInGroups {
+		if !h.Publishes(group) {
+			out[group] = true
+		}
 	}
 	return out
 }
 
 // Publishes reports whether the entity group is published.
 func (h HomeAssistant) Publishes(group string) bool {
-	return h.Disabled()[group] == false
+	if OptInGroups[group] {
+		return contains(h.EnabledGroups, group)
+	}
+	return !contains(h.DisabledGroups, group)
 }
 
 // SetPublishes publishes the entity group or stops publishing it.
 func (h *HomeAssistant) SetPublishes(group string, on bool) {
-	groups := h.DisabledGroups[:0:0]
-	for _, g := range h.DisabledGroups {
-		if g != group {
-			groups = append(groups, g)
+	if OptInGroups[group] {
+		h.EnabledGroups = setMember(h.EnabledGroups, group, on)
+	} else {
+		h.DisabledGroups = setMember(h.DisabledGroups, group, !on)
+	}
+}
+
+func contains(list []string, s string) bool {
+	for _, item := range list {
+		if item == s {
+			return true
 		}
 	}
-	if on == false {
-		groups = append(groups, group)
+	return false
+}
+
+// setMember adds s to a sorted list or removes it.
+func setMember(list []string, s string, member bool) []string {
+	out := list[:0:0]
+	for _, item := range list {
+		if item != s {
+			out = append(out, item)
+		}
 	}
-	sort.Strings(groups)
-	h.DisabledGroups = groups
+	if member {
+		out = append(out, s)
+	}
+	sort.Strings(out)
+	return out
 }
 
 // Reporting controls how often state is published and whether it is retained.

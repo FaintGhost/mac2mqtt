@@ -170,3 +170,18 @@ func TestPublishedGroups(t *testing.T) {
 		t.Fatalf("disabled = %v", h.DisabledGroups)
 	}
 }
+
+func TestOptInGroups(t *testing.T) {
+	var h HomeAssistant
+	if h.Publishes("shortcuts") || !h.Disabled()["shortcuts"] {
+		t.Fatal("shortcuts are published by default")
+	}
+	h.SetPublishes("shortcuts", true)
+	if !h.Publishes("shortcuts") || h.Disabled()["shortcuts"] || len(h.DisabledGroups) != 0 {
+		t.Fatalf("enabled = %v, disabled = %v", h.EnabledGroups, h.DisabledGroups)
+	}
+	h.SetPublishes("shortcuts", false)
+	if h.Publishes("shortcuts") || len(h.EnabledGroups) != 0 {
+		t.Fatalf("enabled = %v", h.EnabledGroups)
+	}
+}

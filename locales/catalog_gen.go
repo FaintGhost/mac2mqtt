@@ -1330,11 +1330,11 @@ func (msgs Messages) GroupSessionTitle() string {
 	return Catalog.Format(msgs.locale, "groupSessionTitle", nil)
 }
 
-// GroupSessionBody says "Whether the screen is locked, and idle time"
+// GroupSessionBody says "Screen lock, display and idle time, with lock, sleep and wake buttons"
 // in the language the app shows.
 func GroupSessionBody() string { return In(i18n.Locale()).GroupSessionBody() }
 
-// GroupSessionBody says "Whether the screen is locked, and idle time"
+// GroupSessionBody says "Screen lock, display and idle time, with lock, sleep and wake buttons"
 // in the language of msgs.
 func (msgs Messages) GroupSessionBody() string {
 	return Catalog.Format(msgs.locale, "groupSessionBody", nil)
@@ -1818,4 +1818,164 @@ func Copied() string { return In(i18n.Locale()).Copied() }
 // in the language of msgs.
 func (msgs Messages) Copied() string {
 	return Catalog.Format(msgs.locale, "copied", nil)
+}
+
+// GroupActivityTitle says "Camera and Microphone"
+// in the language the app shows.
+func GroupActivityTitle() string { return In(i18n.Locale()).GroupActivityTitle() }
+
+// GroupActivityTitle says "Camera and Microphone"
+// in the language of msgs.
+func (msgs Messages) GroupActivityTitle() string {
+	return Catalog.Format(msgs.locale, "groupActivityTitle", nil)
+}
+
+// GroupActivityBody says "Whether an app uses them, as in a call: for an on-air light"
+// in the language the app shows.
+func GroupActivityBody() string { return In(i18n.Locale()).GroupActivityBody() }
+
+// GroupActivityBody says "Whether an app uses them, as in a call: for an on-air light"
+// in the language of msgs.
+func (msgs Messages) GroupActivityBody() string {
+	return Catalog.Format(msgs.locale, "groupActivityBody", nil)
+}
+
+// GroupNotifyTitle says "Notifications and Speech"
+// in the language the app shows.
+func GroupNotifyTitle() string { return In(i18n.Locale()).GroupNotifyTitle() }
+
+// GroupNotifyTitle says "Notifications and Speech"
+// in the language of msgs.
+func (msgs Messages) GroupNotifyTitle() string {
+	return Catalog.Format(msgs.locale, "groupNotifyTitle", nil)
+}
+
+// GroupNotifyBody says "Home Assistant can show a notification on this Mac, or speak"
+// in the language the app shows.
+func GroupNotifyBody() string { return In(i18n.Locale()).GroupNotifyBody() }
+
+// GroupNotifyBody says "Home Assistant can show a notification on this Mac, or speak"
+// in the language of msgs.
+func (msgs Messages) GroupNotifyBody() string {
+	return Catalog.Format(msgs.locale, "groupNotifyBody", nil)
+}
+
+// GroupShortcutsTitle says "Shortcuts"
+// in the language the app shows.
+func GroupShortcutsTitle() string { return In(i18n.Locale()).GroupShortcutsTitle() }
+
+// GroupShortcutsTitle says "Shortcuts"
+// in the language of msgs.
+func (msgs Messages) GroupShortcutsTitle() string {
+	return Catalog.Format(msgs.locale, "groupShortcutsTitle", nil)
+}
+
+// GroupShortcutsBody says "Home Assistant can run your shortcuts. Anyone who can publish to the broker could too."
+// in the language the app shows.
+func GroupShortcutsBody() string { return In(i18n.Locale()).GroupShortcutsBody() }
+
+// GroupShortcutsBody says "Home Assistant can run your shortcuts. Anyone who can publish to the broker could too."
+// in the language of msgs.
+func (msgs Messages) GroupShortcutsBody() string {
+	return Catalog.Format(msgs.locale, "groupShortcutsBody", nil)
+}
+
+// MetricActivity says "Camera and Mic"
+// in the language the app shows.
+func MetricActivity() string { return In(i18n.Locale()).MetricActivity() }
+
+// MetricActivity says "Camera and Mic"
+// in the language of msgs.
+func (msgs Messages) MetricActivity() string {
+	return Catalog.Format(msgs.locale, "metricActivity", nil)
+}
+
+// ActivityDetail says "As the menu bar's indicator shows"
+// in the language the app shows.
+func ActivityDetail() string { return In(i18n.Locale()).ActivityDetail() }
+
+// ActivityDetail says "As the menu bar's indicator shows"
+// in the language of msgs.
+func (msgs Messages) ActivityDetail() string {
+	return Catalog.Format(msgs.locale, "activityDetail", nil)
+}
+
+// MetricDisplay says "Display"
+// in the language the app shows.
+func MetricDisplay() string { return In(i18n.Locale()).MetricDisplay() }
+
+// MetricDisplay says "Display"
+// in the language of msgs.
+func (msgs Messages) MetricDisplay() string {
+	return Catalog.Format(msgs.locale, "metricDisplay", nil)
+}
+
+// DisplayAwake says "Awake"
+// in the language the app shows.
+func DisplayAwake() string { return In(i18n.Locale()).DisplayAwake() }
+
+// DisplayAwake says "Awake"
+// in the language of msgs.
+func (msgs Messages) DisplayAwake() string {
+	return Catalog.Format(msgs.locale, "displayAwake", nil)
+}
+
+// DisplayAsleep says "Asleep"
+// in the language the app shows.
+func DisplayAsleep() string { return In(i18n.Locale()).DisplayAsleep() }
+
+// DisplayAsleep says "Asleep"
+// in the language of msgs.
+func (msgs Messages) DisplayAsleep() string {
+	return Catalog.Format(msgs.locale, "displayAsleep", nil)
+}
+
+// DisplayDetail says "Home Assistant can lock, sleep and wake it"
+// in the language the app shows.
+func DisplayDetail() string { return In(i18n.Locale()).DisplayDetail() }
+
+// DisplayDetail says "Home Assistant can lock, sleep and wake it"
+// in the language of msgs.
+func (msgs Messages) DisplayDetail() string {
+	return Catalog.Format(msgs.locale, "displayDetail", nil)
+}
+
+// CameraInUse says "Camera in use"
+// in the language the app shows.
+func CameraInUse() string { return In(i18n.Locale()).CameraInUse() }
+
+// CameraInUse says "Camera in use"
+// in the language of msgs.
+func (msgs Messages) CameraInUse() string {
+	return Catalog.Format(msgs.locale, "cameraInUse", nil)
+}
+
+// MicInUse says "Microphone in use"
+// in the language the app shows.
+func MicInUse() string { return In(i18n.Locale()).MicInUse() }
+
+// MicInUse says "Microphone in use"
+// in the language of msgs.
+func (msgs Messages) MicInUse() string {
+	return Catalog.Format(msgs.locale, "micInUse", nil)
+}
+
+// CameraAndMicInUse says "Camera and mic in use"
+// in the language the app shows.
+func CameraAndMicInUse() string { return In(i18n.Locale()).CameraAndMicInUse() }
+
+// CameraAndMicInUse says "Camera and mic in use"
+// in the language of msgs.
+func (msgs Messages) CameraAndMicInUse() string {
+	return Catalog.Format(msgs.locale, "cameraAndMicInUse", nil)
+}
+
+// NotInUse says "Not in use"
+// in the language the app shows.
+func NotInUse() string { return In(i18n.Locale()).NotInUse() }
+
+// NotInUse says "Not in use"
+// in the language of msgs.
+func (msgs Messages) NotInUse() string {
+	return Catalog.Format(msgs.locale, "notInUse", nil)
 }

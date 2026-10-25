@@ -56,16 +56,29 @@ type MediaInfo struct {
 	PlaybackRate    float64 `json:"playback_rate,omitempty"`
 }
 
+// ActivityInfo tells whether an app uses a camera or a microphone.
+type ActivityInfo struct {
+	CameraInUse     bool `json:"camera_in_use"`
+	MicrophoneInUse bool `json:"microphone_in_use"`
+}
+
+// DisplayInfo tells whether the display is awake.
+type DisplayInfo struct {
+	Awake bool `json:"awake"`
+}
+
 // Snapshot is one point-in-time report of system status.
 type Snapshot struct {
-	LastSeen time.Time   `json:"last_seen"`
-	App      AppInfo     `json:"app"`
-	Device   DeviceInfo  `json:"device"`
-	Network  NetworkInfo `json:"network"`
-	Power    PowerInfo   `json:"power"`
-	Session  SessionInfo `json:"session"`
-	Audio    *AudioState `json:"audio,omitempty"`
-	Media    *MediaInfo  `json:"media,omitempty"`
+	LastSeen time.Time    `json:"last_seen"`
+	App      AppInfo      `json:"app"`
+	Device   DeviceInfo   `json:"device"`
+	Network  NetworkInfo  `json:"network"`
+	Power    PowerInfo    `json:"power"`
+	Session  SessionInfo  `json:"session"`
+	Activity ActivityInfo `json:"activity"`
+	Display  DisplayInfo  `json:"display"`
+	Audio    *AudioState  `json:"audio,omitempty"`
+	Media    *MediaInfo   `json:"media,omitempty"`
 }
 
 // Runtime contains values that only the MyGo application layer can supply.

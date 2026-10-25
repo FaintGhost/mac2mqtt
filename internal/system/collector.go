@@ -18,6 +18,8 @@ type Collector struct {
 
 	goos   string
 	runner commandRunner
+	// readActivity reads the activity; tests replace it.
+	readActivity func() Activity
 
 	osVersionOnce sync.Once
 	osVersion     string
@@ -39,6 +41,8 @@ func newCollector(version, goos string, runner commandRunner) *Collector {
 		start:   time.Now(),
 		goos:    goos,
 		runner:  runner,
+
+		readActivity: readActivity,
 	}
 }
 
@@ -61,6 +65,7 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 		}
 	}
 
+	activity := c.Activity()
 	var media *MediaInfo
 	if rt.SkipMedia == false {
 		media = c.Media(ctx)
@@ -87,8 +92,10 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 			Locked:      c.screenLocked(ctx),
 			IdleSeconds: nonNegativeSeconds(rt.Idle),
 		},
-		Audio: audio,
-		Media: media,
+		Activity: ActivityInfo{CameraInUse: activity.CameraInUse, MicrophoneInUse: activity.MicrophoneInUse},
+		Display:  DisplayInfo{Awake: !activity.DisplayAsleep},
+		Audio:    audio,
+		Media:    media,
 	}
 }
 
@@ -129,6 +136,15 @@ func (c *Collector) detectOSVersion(ctx context.Context) string {
 		c.osVersion = c.goos
 	})
 	return c.osVersion
+}
+
+// Activity reads whether a camera or a microphone is in use, and whether
+// the display sleeps. It is cheap: no process starts.
+func (c *Collector) Activity() Activity {
+	if c.goos != "darwin" {
+		return Activity{}
+	}
+	return c.readActivity()
 }
 
 // detectHardware reads the model of this Mac once: it does not change.

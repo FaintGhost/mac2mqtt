@@ -49,6 +49,18 @@ type Options struct {
 	// MediaCommand and SeekMedia control the Now Playing app.
 	MediaCommand func(context.Context, system.MediaCommand) error
 	SeekMedia    func(context.Context, float64) error
+	// Activity reads whether a camera or microphone is in use and whether
+	// the display sleeps, which the service watches every few seconds.
+	Activity func() system.Activity
+	// SystemCommand locks the screen, sleeps or wakes the display, or puts
+	// the Mac to sleep.
+	SystemCommand func(context.Context, system.SystemCommand) error
+	// Notify shows a notification, and Say speaks text.
+	Notify func(ctx context.Context, title, message string) error
+	Say    func(context.Context, string) error
+	// Shortcuts lists the user's shortcuts, and RunShortcut runs one.
+	Shortcuts   func(context.Context) []string
+	RunShortcut func(ctx context.Context, name, input string) error
 	// CleanupTopics are retained topics of an earlier configuration whose
 	// payloads the service clears with empty retained publishes after connect.
 	CleanupTopics []string
@@ -76,6 +88,9 @@ type Manager struct {
 	// lastAudio is the audio state of the last state published, which the
 	// media player's volume and mute topics repeat.
 	lastAudio *system.AudioState
+
+	lastActivity system.Activity
+	shortcuts    []string
 }
 
 type commandRequest struct {
@@ -193,6 +208,12 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+	var activityC <-chan time.Time
+	if m.opts.Activity != nil {
+		activityTicker := time.NewTicker(2 * time.Second)
+		defer activityTicker.Stop()
+		activityC = activityTicker.C
+	}
 	var mediaC <-chan time.Time
 	if m.mediaEnabled() {
 		mediaTicker := time.NewTicker(3 * time.Second)
@@ -224,6 +245,18 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 				m.setPhase(PhaseError, friendlyError(err))
 				return true
 			}
+		case <-activityC:
+			// A camera or microphone in use, or the display waking, is
+			// published at once, for automations to follow.
+			activity := m.opts.Activity()
+			if activity == m.lastActivity {
+				continue
+			}
+			m.lastActivity = activity
+			if err := m.publishState(ctx, client); err != nil {
+				m.setPhase(PhaseError, friendlyError(err))
+				return true
+			}
 		case <-mediaC:
 			media := m.opts.Media(ctx)
 			if m.mediaSet && sameMedia(m.lastMedia, media) {
@@ -248,6 +281,13 @@ func (m *Manager) afterConnect(ctx context.Context, client broker.Client) error 
 	probe := system.Snapshot{}
 	if m.opts.Snapshot != nil {
 		probe = m.opts.Snapshot(setupCtx)
+	}
+	m.shortcuts = nil
+	if m.opts.Shortcuts != nil && m.opts.Config.HomeAssistant.Publishes(homeassistant.GroupShortcuts) {
+		m.shortcuts = m.opts.Shortcuts(setupCtx)
+	}
+	if m.opts.Activity != nil {
+		m.lastActivity = m.opts.Activity()
 	}
 	entities := m.entities(probe)
 	var topics []string
@@ -414,6 +454,40 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 				}
 			}
 		}
+	case base + "/system/command":
+		command, ok := system.ParseSystemCommand(payload)
+		switch {
+		case !ok:
+			err = fmt.Errorf("invalid system command %q", payload)
+		case m.opts.SystemCommand == nil:
+			err = fmt.Errorf("system control is unavailable")
+		default:
+			err = m.opts.SystemCommand(commandCtx, command)
+		}
+	case base + "/notify":
+		title, message := parseNotification(payload)
+		switch {
+		case message == "":
+			err = fmt.Errorf("empty notification")
+		case m.opts.Notify == nil:
+			err = fmt.Errorf("notifications are unavailable")
+		default:
+			err = m.opts.Notify(commandCtx, title, message)
+		}
+	case base + "/say":
+		if m.opts.Say == nil {
+			err = fmt.Errorf("speech is unavailable")
+			break
+		}
+		_, message := parseNotification(payload)
+		err = m.opts.Say(commandCtx, message)
+	case base + "/shortcut/run":
+		name, input := parseShortcut(payload)
+		if m.opts.RunShortcut == nil {
+			err = fmt.Errorf("shortcuts are unavailable")
+			break
+		}
+		err = m.opts.RunShortcut(commandCtx, name, input)
 	case base + "/refresh":
 	// A button command only asks for a fresh report.
 	default:
@@ -433,6 +507,32 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 			m.setLastError(friendlyError(pubErr))
 		}
 	}
+}
+
+// parseNotification reads a notification: its text, or JSON with a title
+// and a message, as an automation's mqtt.publish may send.
+func parseNotification(payload string) (title, message string) {
+	var n struct {
+		Title   string `json:"title"`
+		Message string `json:"message"`
+	}
+	if strings.HasPrefix(payload, "{") && json.Unmarshal([]byte(payload), &n) == nil {
+		return strings.TrimSpace(n.Title), strings.TrimSpace(n.Message)
+	}
+	return "", strings.TrimSpace(payload)
+}
+
+// parseShortcut reads which shortcut to run: its name, or JSON with a name
+// and text for its input.
+func parseShortcut(payload string) (name, input string) {
+	var s struct {
+		Name  string `json:"name"`
+		Input string `json:"input"`
+	}
+	if strings.HasPrefix(payload, "{") && json.Unmarshal([]byte(payload), &s) == nil {
+		return strings.TrimSpace(s.Name), s.Input
+	}
+	return strings.TrimSpace(payload), ""
 }
 
 // mediaControl sends a command, or a seek, to the Now Playing app.
@@ -639,6 +739,7 @@ func (m *Manager) entityOptions(probe system.Snapshot) homeassistant.Options {
 		},
 		HasBattery: probe.Power.BatteryPercent != nil || probe.Power.Charging != nil,
 		Disabled:   cfg.HomeAssistant.Disabled(),
+		Shortcuts:  m.shortcuts,
 	}
 }
 

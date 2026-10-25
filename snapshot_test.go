@@ -78,6 +78,7 @@ func connectedTestApp() *app {
 		Network:  system.NetworkInfo{Online: true},
 		Power:    system.PowerInfo{Source: "AC"},
 		Session:  system.SessionInfo{IdleSeconds: 42},
+		Display:  system.DisplayInfo{Awake: true},
 		Audio:    &system.AudioState{Volume: 35},
 		Media: &system.MediaInfo{
 			State: "playing", Title: "“超微距”下的瑞士长什么样？", Artist: "Mediastorm影视飓风",

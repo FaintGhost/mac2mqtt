@@ -48,7 +48,7 @@ type app struct {
 
 	// publishing mirrors the published entity groups, in entityGroups'
 	// order, for the switches that turn them on and off.
-	publishing [6]bool
+	publishing []bool
 	// skipMedia is true while Now Playing is not published, so that
 	// snapshots, on the service's goroutine, do not read it.
 	skipMedia atomic.Bool
@@ -143,6 +143,7 @@ func (a *app) applyConfig(cfg config.Config) {
 	a.draft = cfg
 	a.editPort = float64(cfg.Broker.Port)
 	a.editInterval = float64(cfg.Reporting.IntervalSeconds)
+	a.publishing = make([]bool, len(entityGroups))
 	for i, g := range entityGroups {
 		a.publishing[i] = cfg.HomeAssistant.Publishes(g.id)
 	}
@@ -389,6 +390,14 @@ func (a *app) toggleWindow() {
 	}
 }
 
+// notify shows a notification from Home Assistant.
+func notify(_ context.Context, title, message string) error {
+	return mygo.NewNotification(mygo.NotificationOptions{
+		Title: displayOr(title, "Home Assistant"),
+		Body:  message,
+	}).Show()
+}
+
 // mediaControl sends a command to the Now Playing app from the window,
 // then shows and publishes what plays once it has changed.
 func (a *app) mediaControl(command system.MediaCommand) {
@@ -462,9 +471,21 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 		SetMuted: func(ctx context.Context, muted bool) error {
 			return a.controller.SetMuted(ctx, muted)
 		},
-		Media:        a.collector.Media,
-		MediaCommand: a.controller.SendMediaCommand,
-		SeekMedia:    a.controller.SeekMedia,
+		Media:         a.collector.Media,
+		MediaCommand:  a.controller.SendMediaCommand,
+		SeekMedia:     a.controller.SeekMedia,
+		Activity:      a.collector.Activity,
+		SystemCommand: a.controller.RunSystemCommand,
+		Notify:        notify,
+		Say:           a.controller.Say,
+		Shortcuts: func(ctx context.Context) []string {
+			names, err := a.controller.Shortcuts(ctx)
+			if err != nil {
+				log.Printf("Mac2MQTT: %v", err)
+			}
+			return names
+		},
+		RunShortcut: a.controller.RunShortcut,
 	})
 
 	a.svcMu.Lock()

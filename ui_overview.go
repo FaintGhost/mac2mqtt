@@ -291,6 +291,26 @@ func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 				}
 				tile(c, t, p, glyph, tint, locales.MetricScreen(), value, detail)
 			})
+			ui.Row(c).Gap(12).Children(func() {
+				glyph, value := iconCamera, a.groupValue(homeassistant.GroupActivity)
+				if s.Activity.MicrophoneInUse && !s.Activity.CameraInUse {
+					glyph = iconMic
+				}
+				tint := colorGray
+				if s.Activity.CameraInUse || s.Activity.MicrophoneInUse {
+					tint = colorRed
+				}
+				tile(c, t, p, glyph, tint, locales.MetricActivity(), value, locales.ActivityDetail())
+
+				value, tint = locales.DisplayAwake(), colorTeal
+				if !s.Display.Awake && !collecting {
+					value, tint = locales.DisplayAsleep(), colorGray
+				}
+				if collecting {
+					value = locales.Collecting()
+				}
+				tile(c, t, p, iconDisplay, tint, locales.MetricDisplay(), value, locales.DisplayDetail())
+			})
 		})
 	})
 }
@@ -350,6 +370,20 @@ func (a *app) groupValue(group string) string {
 			return locales.MediaPlaying()
 		}
 		return locales.MediaPaused()
+	case homeassistant.GroupActivity:
+		switch {
+		case s.Activity.CameraInUse && s.Activity.MicrophoneInUse:
+			return locales.CameraAndMicInUse()
+		case s.Activity.CameraInUse:
+			return locales.CameraInUse()
+		case s.Activity.MicrophoneInUse:
+			return locales.MicInUse()
+		}
+		return locales.NotInUse()
+	case homeassistant.GroupNotify:
+		return ""
+	case homeassistant.GroupShortcuts:
+		return ""
 	case homeassistant.GroupDiagnostics:
 		return locales.VersionShort(a.version)
 	}

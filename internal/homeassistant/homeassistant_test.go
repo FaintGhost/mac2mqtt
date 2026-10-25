@@ -24,8 +24,8 @@ func testOptions() Options {
 
 func TestSystemEntitiesHaveStableUniqueTopics(t *testing.T) {
 	entities := SystemEntities(testOptions())
-	if len(entities) != 19 {
-		t.Fatalf("entities = %d, want 19", len(entities))
+	if len(entities) != 28 {
+		t.Fatalf("entities = %d, want 28", len(entities))
 	}
 	topics := make(map[string]bool)
 	uniqueIDs := make(map[string]bool)
@@ -109,8 +109,8 @@ func TestDesktopHasNoBatteryEntities(t *testing.T) {
 	opts := testOptions()
 	opts.HasBattery = false
 	entities := SystemEntities(opts)
-	if len(entities) != 17 {
-		t.Fatalf("desktop entities = %d, want 17", len(entities))
+	if len(entities) != 26 {
+		t.Fatalf("desktop entities = %d, want 26", len(entities))
 	}
 	for _, entity := range entities {
 		if entity.ObjectID == "battery" || entity.ObjectID == "charging" {
@@ -125,7 +125,7 @@ func TestSystemEntitiesDeriveTopics(t *testing.T) {
 	opts.AvailabilityTopic = ""
 	entities := SystemEntities(opts)
 	for _, entity := range entities {
-		if entity.Component == "button" || entity.Group == GroupMedia {
+		if entity.Config["state_topic"] == nil || entity.Group == GroupMedia {
 			continue
 		}
 		if entity.Config["state_topic"] != "mac2mqtt/studio/state" {
@@ -156,8 +156,8 @@ func TestDisabledGroupsAreLeftOut(t *testing.T) {
 			t.Errorf("disabled group published %s", entity.ObjectID)
 		}
 	}
-	if n := len(AllEntities(opts)); n != 19 {
-		t.Errorf("all entities = %d, want 19 whatever is disabled", n)
+	if n := len(AllEntities(opts)); n != 29 {
+		t.Errorf("all entities = %d, want 29 whatever is disabled", n)
 	}
 	for _, entity := range AllEntities(opts) {
 		if entity.Group == "" && entity.ObjectID != "refresh" {
@@ -210,5 +210,35 @@ func TestMediaPlayerForMQTTMediaPlayer(t *testing.T) {
 	}
 	if got := player.CommandTopics(); strings.Join(got, " ") != strings.Join(want, " ") {
 		t.Errorf("command topics = %q", got)
+	}
+}
+
+func TestShortcutSelectListsShortcuts(t *testing.T) {
+	opts := testOptions()
+	opts.Shortcuts = []string{"Morning", "Focus On"}
+	for _, entity := range SystemEntities(opts) {
+		if entity.ObjectID == "run_shortcut" {
+			options, _ := entity.Config["options"].([]string)
+			if entity.Component != "select" || strings.Join(options, ",") != "Morning,Focus On" || entity.Config["command_topic"] != "mac2mqtt/studio/shortcut/run" {
+				t.Errorf("run shortcut = %+v", entity)
+			}
+			return
+		}
+	}
+	t.Error("no run_shortcut select")
+}
+
+func TestSystemButtons(t *testing.T) {
+	want := map[string]string{"lock_screen": "LOCK", "display_sleep": "DISPLAY_SLEEP", "display_wake": "DISPLAY_WAKE", "sleep": "SLEEP"}
+	for _, entity := range SystemEntities(testOptions()) {
+		if payload, ok := want[entity.ObjectID]; ok {
+			if entity.Component != "button" || entity.Config["payload_press"] != payload || entity.Config["command_topic"] != "mac2mqtt/studio/system/command" {
+				t.Errorf("%s = %+v", entity.ObjectID, entity)
+			}
+			delete(want, entity.ObjectID)
+		}
+	}
+	if len(want) != 0 {
+		t.Errorf("missing %v", want)
 	}
 }

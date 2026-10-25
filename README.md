@@ -6,8 +6,9 @@
 English | [简体中文](README.zh-CN.md)
 
 A native macOS menu bar app that brings your Mac into Home Assistant over
-MQTT: its network, power, screen lock, sound and what it is playing, with
-volume, mute and playback controls. Home Assistant creates the device and
+MQTT: its network, power, screen and display, camera and microphone, sound
+and what it is playing, with controls for playback, volume, the screen and
+the display, notifications, speech and Shortcuts. Home Assistant creates the device and
 its entities by itself through MQTT discovery.
 
 <p align="center">
@@ -31,8 +32,16 @@ itself, Liquid Glass included, in a single small binary with no webview.
   integration, and generates a `universal` media player for those without
   HACS.
 - **Sound.** Volume and mute, set from Home Assistant.
-- **Screen and session.** Whether the screen is locked, and how long the Mac
-  has been idle.
+- **Screen and display.** Whether the screen is locked and the display
+  awake, how long the Mac has been idle, and buttons to lock the screen,
+  sleep or wake the display, and put the Mac to sleep.
+- **Camera and microphone.** Whether an app uses them, as the menu bar's
+  indicator shows, published within two seconds: turn on an on-air light
+  during calls.
+- **Notifications and speech.** Home Assistant can show a notification on
+  the Mac, or have it speak.
+- **Shortcuts.** Run any of your shortcuts from Home Assistant, with text as
+  input (off until you turn it on).
 - **Power and network.** Power source, battery and charging on laptops (a
   Mac mini or Mac Studio gets no battery entities), and connectivity.
 - **Reliable MQTT.** Retained state, availability with a last will, and
@@ -88,9 +97,12 @@ Assistant.
 |---|---|
 | Network | Network Connectivity (binary sensor) |
 | Power | Power Source; Battery and Charging on laptops |
-| Screen and Session | Screen Locked (binary sensor), Idle Time |
+| Screen and Session | Screen Locked, Display (binary sensors), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons |
+| Camera and Microphone | Camera In Use, Microphone In Use (binary sensors) |
 | Sound | Volume (number), Mute (switch) |
 | Now Playing | Media State, Now Playing (title, with artist, album, app and timing as attributes), Play/Pause, Next Track and Previous Track buttons, Media player |
+| Notifications and Speech | Notification, Speak (`notify`) |
+| Shortcuts (off by default) | Run Shortcut (select of your shortcuts) |
 | Diagnostics | Last Update, App Uptime, App Version, Hostname |
 
 A Refresh button, which publishes the state at once, is always there.
@@ -125,7 +137,13 @@ With the default base topic `mac2mqtt/<device>`:
 | `<base>/media/seek` | HA → Mac | Seconds from the start |
 | `<base>/media/volume/set` | HA → Mac | `0` to `1` |
 | `<base>/media/mute/set` | HA → Mac | `mute` / `unmute` |
+| `<base>/system/command` | HA → Mac | `LOCK`, `DISPLAY_SLEEP`, `DISPLAY_WAKE`, `SLEEP` |
+| `<base>/notify` | HA → Mac | Text, or `{"title": "…", "message": "…"}` |
+| `<base>/say` | HA → Mac | Text to speak |
+| `<base>/shortcut/run` | HA → Mac | A shortcut's name, or `{"name": "…", "input": "…"}` |
 | `<base>/refresh` | HA → Mac | Anything: publish the state now |
+
+Commands are taken only on the topics of groups that are on.
 
 Discovery documents go to `<prefix>/<component>/<node-id>/<object-id>/config`.
 
@@ -146,6 +164,8 @@ Discovery documents go to `<prefix>/<component>/<node-id>/<object-id>/config`.
   "network": { "online": true, "metered": false },
   "power": { "on_battery": false, "source": "AC" },
   "session": { "locked": false, "idle_seconds": 12 },
+  "activity": { "camera_in_use": false, "microphone_in_use": true },
+  "display": { "awake": true },
   "audio": { "volume": 35, "muted": false },
   "media": {
     "state": "playing",
@@ -160,6 +180,41 @@ Discovery documents go to `<prefix>/<component>/<node-id>/<object-id>/config`.
 ```
 
 </details>
+
+## Automation ideas
+
+```yaml
+# An on-air light while the Mac is in a call
+automation:
+  - alias: On air
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.mac_mini_microphone_in_use
+    actions:
+      - action: "light.turn_{{ 'on' if trigger.to_state.state == 'on' else 'off' }}"
+        target: { entity_id: light.door_sign }
+
+  # Lock the Mac when everyone leaves
+  - alias: Lock the Mac
+    triggers:
+      - trigger: state
+        entity_id: zone.home
+        to: "0"
+    actions:
+      - action: button.press
+        target: { entity_id: button.mac_mini_lock_screen }
+
+  # Tell the Mac when the laundry is done
+  - alias: Laundry done
+    triggers:
+      - trigger: state
+        entity_id: sensor.washer_status
+        to: done
+    actions:
+      - action: notify.send_message
+        target: { entity_id: notify.mac_mini_speak }
+        data: { message: The laundry is done }
+```
 
 ## Configuration
 
@@ -187,6 +242,9 @@ give Mac2MQTT a broker user of its own, limited to its topics.
   JavaScript for Automation script, for reading and for commands alike.
 - **Screen lock** is read from the window server's session (`ioreg`) and
   kept current by lock and unlock notifications.
+- **Camera, microphone and display** are read through CoreMediaIO, CoreAudio
+  and CoreGraphics every two seconds, asking only whether a device is in
+  use: nothing is recorded, and no permission is needed.
 - **Volume and mute** use macOS's own audio settings.
 
 ```text
@@ -235,6 +293,21 @@ SHA-256 checksums.
 - Album artwork is not published: MediaRemote hands it only to an API
   `osascript` cannot call.
 - TLS client certificates are not supported.
+
+## Credits
+
+Mac2MQTT stands on the work of others:
+
+- **[MyGo](https://github.com/egoist/mygo)** by [@egoist](https://github.com/egoist),
+  the framework the whole app is built with: its native UI toolkit and
+  Liquid Glass draw every pixel of the window, with the menu bar, login
+  item, notifications, localization and the build and packaging of the
+  disk images, all in Go without cgo. A wonderful framework.
+- [Eclipse Paho MQTT Go client](https://github.com/eclipse-paho/paho.mqtt.golang), the MQTT connection.
+- [purego](https://github.com/ebitengine/purego) by Ebitengine, calling macOS's frameworks without cgo.
+- [Lucide](https://lucide.dev), the icons (ISC license).
+- [MQTT Media Player](https://github.com/bkbilly/mqtt_media_player) by bkbilly, whose discovery format gives Home Assistant a media player.
+- [Home Assistant](https://www.home-assistant.io) and its MQTT discovery.
 
 ## License
 

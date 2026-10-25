@@ -21,8 +21,11 @@ var entityGroups = []entityGroup{
 	{homeassistant.GroupNetwork, iconNetwork, colorBlue, locales.GroupNetworkTitle, locales.GroupNetworkBody},
 	{homeassistant.GroupPower, iconPower, colorGreen, locales.GroupPowerTitle, locales.GroupPowerBody},
 	{homeassistant.GroupSession, iconLock, colorPurple, locales.GroupSessionTitle, locales.GroupSessionBody},
+	{homeassistant.GroupActivity, iconCamera, colorRed, locales.GroupActivityTitle, locales.GroupActivityBody},
 	{homeassistant.GroupAudio, iconVolume, colorPink, locales.GroupAudioTitle, locales.GroupAudioBody},
 	{homeassistant.GroupMedia, iconMusic, colorOrange, locales.GroupMediaTitle, locales.GroupMediaBody},
+	{homeassistant.GroupNotify, iconBell, colorTeal, locales.GroupNotifyTitle, locales.GroupNotifyBody},
+	{homeassistant.GroupShortcuts, iconShortcuts, colorPurple, locales.GroupShortcutsTitle, locales.GroupShortcutsBody},
 	{homeassistant.GroupDiagnostics, iconDiagnostics, colorGray, locales.GroupDiagnosticsTitle, locales.GroupDiagnosticsBody},
 }
 

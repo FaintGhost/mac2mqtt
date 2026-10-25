@@ -126,11 +126,24 @@ func TestManagerPublishesDiscoveryStateAndAvailability(t *testing.T) {
 		m.Run(ctx)
 		close(done)
 	}()
-	waitFor(t, func() bool { return len(fake.messages()) >= 22 })
+	waitFor(t, func() bool { return len(fake.messages()) >= 31 })
 	msgs := fake.messages()
-	// Clearing retained documents comes first: legacy discovery has no body.
-	if msgs[0].topic != "homeassistant/media_player/mac2mqtt-test/now_playing/config" || len(msgs[0].body) != 0 || msgs[0].retain == false {
-		t.Errorf("first publish = %+v, want the legacy media_player cleared", msgs[0])
+	// Clearing retained documents comes first: what is not published, and
+	// legacy discovery, are cleared with empty bodies.
+	cleared := map[string]bool{}
+	for _, msg := range msgs {
+		if len(msg.body) != 0 {
+			break
+		}
+		cleared[msg.topic] = msg.retain
+	}
+	for _, topic := range []string{
+		"homeassistant/media_player/mac2mqtt-test/now_playing/config",
+		"homeassistant/select/mac2mqtt-test/run_shortcut/config",
+	} {
+		if !cleared[topic] {
+			t.Errorf("%s was not cleared first", topic)
+		}
 	}
 	var state *publishedMessage
 	discovery := 0
@@ -172,8 +185,8 @@ func TestManagerPublishesDiscoveryStateAndAvailability(t *testing.T) {
 			}
 		}
 	}
-	if discovery != 19 {
-		t.Errorf("discovery entities = %d, want 19", discovery)
+	if discovery != 28 {
+		t.Errorf("discovery entities = %d, want 28", discovery)
 	}
 	var got system.Snapshot
 	if err := json.Unmarshal(state.body, &got); err != nil {
@@ -602,4 +615,124 @@ func TestManagerControlsMedia(t *testing.T) {
 		}
 		return true
 	})
+}
+
+func TestManagerSystemCommandsNotificationsAndShortcuts(t *testing.T) {
+	fake := newFakeClient()
+	cfg := testConfig()
+	cfg.HomeAssistant.SetPublishes("shortcuts", true)
+	var mu sync.Mutex
+	var got []string
+	record := func(s string) {
+		mu.Lock()
+		defer mu.Unlock()
+		got = append(got, s)
+	}
+	m := New(Options{
+		Config:        cfg,
+		Version:       "0.1.0",
+		Snapshot:      func(context.Context) system.Snapshot { return testSnapshot() },
+		SystemCommand: func(_ context.Context, c system.SystemCommand) error { record("system " + string(c)); return nil },
+		Notify: func(_ context.Context, title, message string) error {
+			record("notify " + title + "|" + message)
+			return nil
+		},
+		Say:       func(_ context.Context, text string) error { record("say " + text); return nil },
+		Shortcuts: func(context.Context) []string { return []string{"Morning"} },
+		RunShortcut: func(_ context.Context, name, input string) error {
+			record("shortcut " + name + "|" + input)
+			return nil
+		},
+		NewClient:  func(broker.Config) broker.Client { return fake },
+		RetryDelay: 10 * time.Millisecond,
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		m.Run(ctx)
+		close(done)
+	}()
+	defer func() {
+		cancel()
+		<-done
+	}()
+	for _, topic := range []string{"system/command", "notify", "say", "shortcut/run"} {
+		topic := "mac2mqtt/test/" + topic
+		waitFor(t, func() bool { return fake.handler(topic) != nil })
+	}
+	send := func(topic, payload string) {
+		fake.handler("mac2mqtt/test/" + topic)(broker.Message{Topic: "mac2mqtt/test/" + topic, Payload: []byte(payload)})
+	}
+	send("system/command", "LOCK")
+	send("system/command", "REBOOT")
+	send("notify", "Laundry is done")
+	send("notify", `{"title":"Door","message":"Front door opened"}`)
+	send("say", "Hello")
+	send("shortcut/run", "Morning")
+	send("shortcut/run", `{"name":"Morning","input":"text"}`)
+	want := []string{"system LOCK", "notify |Laundry is done", "notify Door|Front door opened", "say Hello", "shortcut Morning|", "shortcut Morning|text"}
+	waitFor(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(got) == len(want)
+	})
+	mu.Lock()
+	defer mu.Unlock()
+	if strings.Join(got, ",") != strings.Join(want, ",") {
+		t.Errorf("got %q, want %q", got, want)
+	}
+	shortcut := false
+	for _, msg := range fake.messages() {
+		if msg.topic == "homeassistant/select/mac2mqtt-test/run_shortcut/config" && strings.Contains(string(msg.body), "Morning") {
+			shortcut = true
+		}
+	}
+	if !shortcut {
+		t.Error("the Run Shortcut select was not published with the shortcuts")
+	}
+}
+
+func TestManagerPublishesActivityChanges(t *testing.T) {
+	fake := newFakeClient()
+	var mu sync.Mutex
+	activity := system.Activity{}
+	cfg := testConfig()
+	cfg.Reporting.IntervalSeconds = 3600 // only a change publishes again
+	m := New(Options{
+		Config:   cfg,
+		Version:  "0.1.0",
+		Snapshot: func(context.Context) system.Snapshot { return testSnapshot() },
+		Activity: func() system.Activity {
+			mu.Lock()
+			defer mu.Unlock()
+			return activity
+		},
+		NewClient:  func(broker.Config) broker.Client { return fake },
+		RetryDelay: 10 * time.Millisecond,
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		m.Run(ctx)
+		close(done)
+	}()
+	defer func() {
+		cancel()
+		<-done
+	}()
+	states := func() int {
+		n := 0
+		for _, msg := range fake.messages() {
+			if msg.topic == "mac2mqtt/test/state" {
+				n++
+			}
+		}
+		return n
+	}
+	waitFor(t, func() bool { return states() == 1 })
+	mu.Lock()
+	activity.CameraInUse = true
+	mu.Unlock()
+	// The camera turning on is published without waiting for the interval.
+	waitFor(t, func() bool { return states() >= 2 })
 }
