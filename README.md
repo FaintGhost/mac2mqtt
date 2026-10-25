@@ -53,7 +53,13 @@ itself, Liquid Glass included, in a single small binary with no webview.
 
 ## Install
 
-Download a disk image from the [latest release](https://github.com/FaintGhost/mac2mqtt/releases/latest):
+With [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask faintghost/tap/mac2mqtt
+```
+
+Or download a disk image from the [latest release](https://github.com/FaintGhost/mac2mqtt/releases/latest):
 
 | File | For |
 |---|---|

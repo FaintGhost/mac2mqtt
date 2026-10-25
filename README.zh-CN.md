@@ -41,7 +41,13 @@ Liquid Glass），没有 WebView，只有一个小巧的二进制文件。
 
 ## 安装
 
-从 [最新 Release](https://github.com/FaintGhost/mac2mqtt/releases/latest) 下载磁盘映像：
+使用 [Homebrew](https://brew.sh)：
+
+```sh
+brew install --cask faintghost/tap/mac2mqtt
+```
+
+或从 [最新 Release](https://github.com/FaintGhost/mac2mqtt/releases/latest) 下载磁盘映像：
 
 | 文件 | 适用于 |
 |---|---|

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.1
+
+- Lighter: idle in the menu bar, Mac2MQTT takes about a fifth of the
+  memory it did, and starts no processes every few seconds. Volume, mute
+  and the screen's lock are read without one, Now Playing by a single
+  watcher, and closing the window frees what it held.
+- Now Playing shows the playing app's icon.
+- The menu bar's icon is the app icon's house.
+- Home Assistant names the entities in the app's language, with English
+  entity IDs that automations can rely on.
+- The window opens at the top of its page, and each page keeps its own
+  scroll.
+- Install with Homebrew: brew install --cask faintghost/tap/mac2mqtt.
+
 ## 0.4.0
 
 - A flat icon: a house in one white line on ink, with a signal inside.

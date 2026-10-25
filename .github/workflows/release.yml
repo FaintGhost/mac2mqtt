@@ -41,6 +41,51 @@ jobs:
             exit 1
           fi
 
+      # With a Developer ID, the app is signed with it and notarized, so
+      # that Gatekeeper opens it without asking; without, it is signed ad
+      # hoc. The identity is written into the configuration here only, so
+      # that builds on a Mac without the certificate still work.
+      - name: Set up signing and notarization
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          if [ -z "$MACOS_CERTIFICATE" ]; then
+            echo "::warning::no MACOS_CERTIFICATE secret: the app is signed ad hoc and not notarized"
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          password="$(openssl rand -hex 16)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain
+          echo "$NOTARY_KEY" > "$RUNNER_TEMP/notary.p8"
+          xcrun notarytool store-credentials notary --keychain "$keychain" \
+            --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" --issuer "$NOTARY_ISSUER_ID"
+          rm "$RUNNER_TEMP/notary.p8"
+          identity="$(security find-identity -v -p codesigning "$keychain" | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)"
+          if [ -z "$identity" ]; then
+            echo "::error::the certificate holds no Developer ID Application identity"
+            exit 1
+          fi
+          echo "Signing as $identity"
+          python3 - "$identity" "$keychain" <<'EOF'
+          import json, sys
+          config = json.load(open("mygo.json"))
+          config["macos"]["signingIdentity"] = sys.argv[1]
+          config["macos"]["notarize"] = {"keychainProfile": "notary", "keychain": sys.argv[2]}
+          json.dump(config, open("mygo.json", "w"), indent=2)
+          EOF
+
       - name: Build the disk images and the updates
         env:
           MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
@@ -72,3 +117,27 @@ jobs:
             gh release create "$GITHUB_REF_NAME" release/* --verify-tag \
               --title "Mac2MQTT $GITHUB_REF_NAME" --notes-file notes.md
           fi
+
+      # brew install --cask faintghost/tap/mac2mqtt: the cask in the tap
+      # takes the new version and its universal disk image's checksum,
+      # pushed with the tap's deploy key.
+      - name: Update the Homebrew cask
+        env:
+          DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "::warning::no HOMEBREW_TAP_DEPLOY_KEY secret: the cask is not updated"
+            exit 0
+          fi
+          sha="$(shasum -a 256 "release/Mac2MQTT-$VERSION-universal.dmg" | cut -d' ' -f1)"
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/tap && chmod 600 ~/.ssh/tap
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/tap -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:FaintGhost/homebrew-tap.git "$RUNNER_TEMP/tap"
+          cd "$RUNNER_TEMP/tap"
+          sed -i '' -e "s/^  version \".*\"/  version \"$VERSION\"/" -e "s/^  sha256 \".*\"/  sha256 \"$sha\"/" Casks/mac2mqtt.rb
+          git diff --stat
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -am "mac2mqtt $VERSION"
+          git push origin main
