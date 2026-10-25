@@ -2079,3 +2079,23 @@ func UpdatesUnavailable() string { return In(i18n.Locale()).UpdatesUnavailable()
 func (msgs Messages) UpdatesUnavailable() string {
 	return Catalog.Format(msgs.locale, "updatesUnavailable", nil)
 }
+
+// MetricCamera says "Camera"
+// in the language the app shows.
+func MetricCamera() string { return In(i18n.Locale()).MetricCamera() }
+
+// MetricCamera says "Camera"
+// in the language of msgs.
+func (msgs Messages) MetricCamera() string {
+	return Catalog.Format(msgs.locale, "metricCamera", nil)
+}
+
+// MetricMicrophone says "Microphone"
+// in the language the app shows.
+func MetricMicrophone() string { return In(i18n.Locale()).MetricMicrophone() }
+
+// MetricMicrophone says "Microphone"
+// in the language of msgs.
+func (msgs Messages) MetricMicrophone() string {
+	return Catalog.Format(msgs.locale, "metricMicrophone", nil)
+}

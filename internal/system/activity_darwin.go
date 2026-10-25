@@ -66,17 +66,20 @@ func readActivity() Activity {
 	var a Activity
 	if audioGet != nil {
 		for _, device := range audioDevices() {
-			if isInputDevice(device) && audioRunning(device) {
+			if !isInputDevice(device) {
+				continue
+			}
+			a.HasMicrophone = true
+			if audioRunning(device) {
 				a.MicrophoneInUse = true
-				break
 			}
 		}
 	}
 	if cmioGet != nil {
 		for _, device := range cameraDevices() {
+			a.HasCamera = true
 			if cameraRunning(device) {
 				a.CameraInUse = true
-				break
 			}
 		}
 	}

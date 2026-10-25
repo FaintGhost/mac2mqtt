@@ -33,6 +33,10 @@ func (a *app) entitiesPage(c *ui.Context, t *ui.Theme, p palette) {
 	a.page(c, t, p, locales.PageEntitiesTitle(), 0, nil, func() {
 		section(c, t, p, locales.PublishedToHomeAssistant(), locales.EntitiesFooter(), func() {
 			for i, g := range entityGroups {
+				// Without a camera or a microphone there is nothing to choose.
+				if g.id == homeassistant.GroupActivity && !a.hasCameraOrMicrophone() {
+					continue
+				}
 				c.Key(g.id)
 				ui.Row(c).FillWidth().MinHeight(52).Padding(8, 14).Gap(12).AlignItems(ui.Center).Children(func() {
 					badge(c, g.glyph, g.tint, 28, true)

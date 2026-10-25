@@ -60,6 +60,8 @@ type MediaInfo struct {
 type ActivityInfo struct {
 	CameraInUse     bool `json:"camera_in_use"`
 	MicrophoneInUse bool `json:"microphone_in_use"`
+	HasCamera       bool `json:"has_camera"`
+	HasMicrophone   bool `json:"has_microphone"`
 }
 
 // DisplayInfo tells whether the display is awake.

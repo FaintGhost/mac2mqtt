@@ -71,6 +71,10 @@ type Options struct {
 	HasBattery bool
 	// Disabled names the groups the user does not publish.
 	Disabled map[string]bool
+	// HasCamera and HasMicrophone add the entities telling whether they
+	// are in use: a Mac without them has nothing to tell.
+	HasCamera     bool
+	HasMicrophone bool
 	// Shortcuts are the names of the user's shortcuts, which the Run
 	// Shortcut select offers; with none it is left out.
 	Shortcuts []string
@@ -130,7 +134,9 @@ func SystemEntities(opts Options) []Entity {
 		if opts.HasBattery == false && (entity.ObjectID == "battery" || entity.ObjectID == "charging") {
 			continue
 		}
-		if entity.ObjectID == "run_shortcut" && len(opts.Shortcuts) == 0 {
+		if entity.ObjectID == "run_shortcut" && len(opts.Shortcuts) == 0 ||
+			entity.ObjectID == "camera_in_use" && !opts.HasCamera ||
+			entity.ObjectID == "microphone_in_use" && !opts.HasMicrophone {
 			continue
 		}
 		entities = append(entities, entity)

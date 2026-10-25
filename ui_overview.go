@@ -108,9 +108,11 @@ func statusFact(c *ui.Context, t *ui.Theme, label, value string) {
 // current settings, on this Mac.
 func (a *app) publishedEntities() []homeassistant.Entity {
 	return homeassistant.SystemEntities(homeassistant.Options{
-		BaseTopic:  a.cfg.HomeAssistant.BaseTopic,
-		HasBattery: a.hasBattery(),
-		Disabled:   a.cfg.HomeAssistant.Disabled(),
+		BaseTopic:     a.cfg.HomeAssistant.BaseTopic,
+		HasBattery:    a.hasBattery(),
+		HasCamera:     a.latest.Activity.HasCamera,
+		HasMicrophone: a.latest.Activity.HasMicrophone,
+		Disabled:      a.cfg.HomeAssistant.Disabled(),
 	})
 }
 
@@ -241,78 +243,110 @@ func clock(seconds float64) string {
 	return fmt.Sprintf("%d:%02d", s/60, s%60)
 }
 
+// tileSpec is one tile of This Mac.
+type tileSpec struct {
+	glyph                *ui.SVG
+	tint                 ui.Color
+	label, value, detail string
+}
+
 func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 	s := a.latest
 	collecting := s.LastSeen.IsZero()
+	var tiles []tileSpec
+
+	detail, tint := locales.InternetRouteAvailable(), colorBlue
+	switch {
+	case collecting:
+		detail = locales.WaitingFirstReport()
+	case !s.Network.Online:
+		detail, tint = locales.NoInternetRoute(), colorRed
+	case s.Network.Metered:
+		detail = locales.MeteredConnection()
+	}
+	tiles = append(tiles, tileSpec{iconNetwork, tint, locales.MetricNetwork(), a.groupValue(homeassistant.GroupNetwork), detail})
+
+	glyph, detail := iconPower, locales.PowerSource()
+	if s.Power.BatteryPercent != nil {
+		glyph, detail = iconBattery, localizedPowerSource(s.Power.Source)
+	}
+	tiles = append(tiles, tileSpec{glyph, colorGreen, locales.MetricPower(), a.groupValue(homeassistant.GroupPower), detail})
+
+	glyph, detail, value := iconVolume, locales.Unmuted(), locales.AudioUnavailable()
+	if s.Audio == nil {
+		detail = locales.NoOutputDeviceReadable()
+	} else {
+		value = fmt.Sprintf("%d%%", s.Audio.Volume)
+		if s.Audio.Muted {
+			glyph, detail = iconMuted, locales.Muted()
+		}
+	}
+	tiles = append(tiles, tileSpec{glyph, colorPink, locales.MetricVolume(), value, detail})
+
+	glyph, value, detail = iconUnlock, locales.Unlocked(), localizedIdle(s.Session.IdleSeconds)
+	switch {
+	case collecting:
+		value, detail = locales.Collecting(), locales.WaitingSessionState()
+	case s.Session.Locked:
+		glyph, value = iconLock, locales.Locked()
+	}
+	tiles = append(tiles, tileSpec{glyph, colorPurple, locales.MetricScreen(), value, detail})
+
+	// Only a Mac with a camera or a microphone has them to be in use.
+	if a.hasCameraOrMicrophone() {
+		glyph, tint = iconCamera, colorGray
+		if !s.Activity.HasCamera || s.Activity.MicrophoneInUse && !s.Activity.CameraInUse {
+			glyph = iconMic
+		}
+		if s.Activity.CameraInUse || s.Activity.MicrophoneInUse {
+			tint = colorRed
+		}
+		tiles = append(tiles, tileSpec{glyph, tint, a.activityLabel(), a.groupValue(homeassistant.GroupActivity), locales.ActivityDetail()})
+	}
+
+	value, tint = locales.DisplayAwake(), colorTeal
+	switch {
+	case collecting:
+		value = locales.Collecting()
+	case !s.Display.Awake:
+		value, tint = locales.DisplayAsleep(), colorGray
+	}
+	tiles = append(tiles, tileSpec{iconDisplay, tint, locales.MetricDisplay(), value, locales.DisplayDetail()})
+
 	ui.Column(c).FillWidth().Gap(6).Children(func() {
 		ui.Text(c, locales.ThisMac()).FontSize(12).FontWeight(600).TextColor(t.TextMuted).Padding(0, 12)
+		// Two to a row; a last one alone keeps a tile's width.
 		ui.Column(c).FillWidth().Gap(12).Children(func() {
-			ui.Row(c).Gap(12).Children(func() {
-				net := a.groupValue(homeassistant.GroupNetwork)
-				detail := locales.InternetRouteAvailable()
-				tint := colorBlue
-				switch {
-				case collecting:
-					detail = locales.WaitingFirstReport()
-				case !s.Network.Online:
-					detail, tint = locales.NoInternetRoute(), colorRed
-				case s.Network.Metered:
-					detail = locales.MeteredConnection()
-				}
-				tile(c, t, p, iconNetwork, tint, locales.MetricNetwork(), net, detail)
-
-				glyph, tint := iconPower, colorGreen
-				detail = locales.PowerSource()
-				if s.Power.BatteryPercent != nil {
-					glyph, detail = iconBattery, localizedPowerSource(s.Power.Source)
-				}
-				tile(c, t, p, glyph, tint, locales.MetricPower(), a.groupValue(homeassistant.GroupPower), detail)
-			})
-			ui.Row(c).Gap(12).Children(func() {
-				glyph, tint, detail := iconVolume, colorPink, locales.Unmuted()
-				if s.Audio == nil {
-					detail = locales.NoOutputDeviceReadable()
-				} else if s.Audio.Muted {
-					glyph, detail = iconMuted, locales.Muted()
-				}
-				value := locales.AudioUnavailable()
-				if s.Audio != nil {
-					value = fmt.Sprintf("%d%%", s.Audio.Volume)
-				}
-				tile(c, t, p, glyph, tint, locales.MetricVolume(), value, detail)
-
-				glyph, tint = iconUnlock, colorPurple
-				value, detail = locales.Unlocked(), localizedIdle(s.Session.IdleSeconds)
-				switch {
-				case collecting:
-					value, detail = locales.Collecting(), locales.WaitingSessionState()
-				case s.Session.Locked:
-					glyph, value = iconLock, locales.Locked()
-				}
-				tile(c, t, p, glyph, tint, locales.MetricScreen(), value, detail)
-			})
-			ui.Row(c).Gap(12).Children(func() {
-				glyph, value := iconCamera, a.groupValue(homeassistant.GroupActivity)
-				if s.Activity.MicrophoneInUse && !s.Activity.CameraInUse {
-					glyph = iconMic
-				}
-				tint := colorGray
-				if s.Activity.CameraInUse || s.Activity.MicrophoneInUse {
-					tint = colorRed
-				}
-				tile(c, t, p, glyph, tint, locales.MetricActivity(), value, locales.ActivityDetail())
-
-				value, tint = locales.DisplayAwake(), colorTeal
-				if !s.Display.Awake && !collecting {
-					value, tint = locales.DisplayAsleep(), colorGray
-				}
-				if collecting {
-					value = locales.Collecting()
-				}
-				tile(c, t, p, iconDisplay, tint, locales.MetricDisplay(), value, locales.DisplayDetail())
-			})
+			for i := 0; i < len(tiles); i += 2 {
+				c.Key(i)
+				ui.Row(c).Gap(12).Children(func() {
+					for _, spec := range tiles[i:min(i+2, len(tiles))] {
+						tile(c, t, p, spec.glyph, spec.tint, spec.label, spec.value, spec.detail)
+					}
+					if i+1 == len(tiles) {
+						ui.Box(c).Grow(1).Basis(0)
+					}
+				})
+			}
 		})
 	})
+}
+
+// hasCameraOrMicrophone reports whether the Mac has either, built in or
+// plugged in.
+func (a *app) hasCameraOrMicrophone() bool {
+	return a.latest.Activity.HasCamera || a.latest.Activity.HasMicrophone
+}
+
+// activityLabel names what the Mac has of a camera and a microphone.
+func (a *app) activityLabel() string {
+	switch {
+	case !a.latest.Activity.HasCamera:
+		return locales.MetricMicrophone()
+	case !a.latest.Activity.HasMicrophone:
+		return locales.MetricCamera()
+	}
+	return locales.MetricActivity()
 }
 
 func tile(c *ui.Context, t *ui.Theme, p palette, glyph *ui.SVG, tint ui.Color, label, value, detail string) {

@@ -319,7 +319,13 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 			if activity == m.lastActivity {
 				continue
 			}
+			devices := activity.HasCamera != m.lastActivity.HasCamera || activity.HasMicrophone != m.lastActivity.HasMicrophone
 			m.lastActivity = activity
+			if devices {
+				// A camera or microphone was connected or removed: its
+				// entity comes or goes.
+				report(m.publishDiscovery(ctx, client, false))
+			}
 			report(m.publishState(ctx, client))
 		case <-mediaC:
 			media := m.opts.Media(ctx)
@@ -840,6 +846,9 @@ func (m *Manager) entityOptions(probe system.Snapshot) homeassistant.Options {
 		HasBattery: probe.Power.BatteryPercent != nil || probe.Power.Charging != nil,
 		Disabled:   cfg.HomeAssistant.Disabled(),
 		Shortcuts:  m.shortcuts,
+		// What the Mac has now, as a camera plugged in after launch.
+		HasCamera:     m.lastActivity.HasCamera,
+		HasMicrophone: m.lastActivity.HasMicrophone,
 	}
 }
 

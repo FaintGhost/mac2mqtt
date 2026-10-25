@@ -8,4 +8,9 @@ type Activity struct {
 	CameraInUse     bool
 	MicrophoneInUse bool
 	DisplayAsleep   bool
+	// HasCamera and HasMicrophone tell whether the Mac has any camera and
+	// any audio input at all, built in or plugged in: a Mac mini has
+	// neither until one is connected.
+	HasCamera     bool
+	HasMicrophone bool
 }

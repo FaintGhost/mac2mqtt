@@ -203,5 +203,7 @@
   "checkForUpdates": "檢查更新…",
   "neverChecked": "尚未檢查",
   "lastChecked": "上次檢查：{time}",
-  "updatesUnavailable": "此版本無法自動更新：請從 Release 的 DMG 安裝 Mac2MQTT 到「應用程式」。"
+  "updatesUnavailable": "此版本無法自動更新：請從 Release 的 DMG 安裝 Mac2MQTT 到「應用程式」。",
+  "metricCamera": "相機",
+  "metricMicrophone": "麥克風"
 }

@@ -18,7 +18,9 @@ func testOptions() Options {
 			Model:        "macOS",
 			SWVersion:    "0.1.0",
 		},
-		HasBattery: true,
+		HasBattery:    true,
+		HasCamera:     true,
+		HasMicrophone: true,
 	}
 }
 
@@ -240,5 +242,28 @@ func TestSystemButtons(t *testing.T) {
 	}
 	if len(want) != 0 {
 		t.Errorf("missing %v", want)
+	}
+}
+
+func TestNoCameraOrMicrophoneNoActivityEntities(t *testing.T) {
+	opts := testOptions()
+	opts.HasCamera, opts.HasMicrophone = false, false
+	for _, entity := range SystemEntities(opts) {
+		if entity.ObjectID == "camera_in_use" || entity.ObjectID == "microphone_in_use" {
+			t.Errorf("a Mac without them publishes %s", entity.ObjectID)
+		}
+	}
+	opts.HasMicrophone = true
+	mic := false
+	for _, entity := range SystemEntities(opts) {
+		switch entity.ObjectID {
+		case "camera_in_use":
+			t.Error("a Mac without a camera publishes camera_in_use")
+		case "microphone_in_use":
+			mic = true
+		}
+	}
+	if !mic {
+		t.Error("a Mac with a microphone lacks microphone_in_use")
 	}
 }

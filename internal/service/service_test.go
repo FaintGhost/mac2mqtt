@@ -215,8 +215,8 @@ func TestManagerPublishesDiscoveryStateAndAvailability(t *testing.T) {
 			}
 		}
 	}
-	if discovery != 28 {
-		t.Errorf("discovery entities = %d, want 28", discovery)
+	if discovery != 26 {
+		t.Errorf("discovery entities = %d, want 26", discovery)
 	}
 	var got system.Snapshot
 	if err := json.Unmarshal(state.body, &got); err != nil {
@@ -980,4 +980,45 @@ func TestSameMediaIgnoresALiveStreamsGrowingDuration(t *testing.T) {
 	if sameMedia(a, b) {
 		t.Error("another duration did not count as a change")
 	}
+}
+
+func TestConnectingACameraPublishesItsEntity(t *testing.T) {
+	fake := newFakeClient()
+	var mu sync.Mutex
+	activity := system.Activity{}
+	cfg := testConfig()
+	cfg.Reporting.IntervalSeconds = 3600
+	runManager(t, Options{
+		Config:   cfg,
+		Version:  "0.1.0",
+		Snapshot: func(context.Context) system.Snapshot { return testSnapshot() },
+		Activity: func() system.Activity {
+			mu.Lock()
+			defer mu.Unlock()
+			return activity
+		},
+		NewClient:  func(broker.Config) broker.Client { return fake },
+		RetryDelay: time.Millisecond,
+	})
+	camera := "homeassistant/binary_sensor/mac2mqtt-test/camera_in_use/config"
+	waitFor(t, func() bool { return published(fake, "mac2mqtt/test/state") })
+	if published(fake, camera) {
+		// Only cleared, as an entity that is not published.
+		for _, msg := range fake.messages() {
+			if msg.topic == camera && len(msg.body) > 0 {
+				t.Fatal("a Mac without a camera published camera_in_use")
+			}
+		}
+	}
+	mu.Lock()
+	activity.HasCamera = true
+	mu.Unlock()
+	waitFor(t, func() bool {
+		for _, msg := range fake.messages() {
+			if msg.topic == camera && len(msg.body) > 0 {
+				return true
+			}
+		}
+		return false
+	})
 }

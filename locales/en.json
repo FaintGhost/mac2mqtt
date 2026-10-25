@@ -204,6 +204,8 @@
   "neverChecked": "Not checked yet",
   "lastChecked": "Last checked {time}",
   "updatesUnavailable": "This build can't update itself: install Mac2MQTT from a release disk image into Applications.",
+  "metricCamera": "Camera",
+  "metricMicrophone": "Microphone",
   "@versionShort": {
     "placeholders": {
       "version": {

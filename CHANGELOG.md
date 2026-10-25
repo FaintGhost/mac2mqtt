@@ -5,6 +5,9 @@
 - Mac2MQTT updates itself: it checks for new versions in the background and
   offers to install them, with **Check for Updates…** in the menus and the
   choice to update automatically in Settings.
+- Camera In Use and Microphone In Use are published only when the Mac has
+  a camera or a microphone, built in or plugged in: a Mac mini without them
+  has neither entity, and connecting one adds it at once.
 - A page's title sits on the window with nothing behind it; content that
   scrolls under it fades out, with no edge.
 

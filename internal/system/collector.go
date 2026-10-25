@@ -92,10 +92,15 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 			Locked:      c.screenLocked(ctx),
 			IdleSeconds: nonNegativeSeconds(rt.Idle),
 		},
-		Activity: ActivityInfo{CameraInUse: activity.CameraInUse, MicrophoneInUse: activity.MicrophoneInUse},
-		Display:  DisplayInfo{Awake: !activity.DisplayAsleep},
-		Audio:    audio,
-		Media:    media,
+		Activity: ActivityInfo{
+			CameraInUse:     activity.CameraInUse,
+			MicrophoneInUse: activity.MicrophoneInUse,
+			HasCamera:       activity.HasCamera,
+			HasMicrophone:   activity.HasMicrophone,
+		},
+		Display: DisplayInfo{Awake: !activity.DisplayAsleep},
+		Audio:   audio,
+		Media:   media,
 	}
 }
 
