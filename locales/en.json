@@ -235,6 +235,9 @@
   "entityAppVersion": "App Version",
   "entityHostname": "Hostname",
   "entityRefresh": "Refresh",
+  "localNetworkBlocked": "macOS is blocking the local network",
+  "localNetworkBlockedBody": "Allow Mac2MQTT in System Settings › Privacy & Security › Local Network, then reconnect.",
+  "openLocalNetworkSettings": "Open Settings",
   "@versionShort": {
     "placeholders": {
       "version": {

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"net"
 	"strings"
 
+	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/ui"
 
@@ -285,6 +287,9 @@ type statusInfo struct {
 	label    string // short, as in the sidebar
 	headline string
 	detail   string
+	// action, when set, is what the status card offers to do about it.
+	actionLabel string
+	action      func()
 }
 
 func (a *app) status() statusInfo {
@@ -311,12 +316,37 @@ func (a *app) status() statusInfo {
 		return statusInfo{phase: phase, color: colorOrange, glyph: iconBroker, label: locales.StatusConnecting(),
 			headline: locales.ConnectingHeadline(), detail: a.cfg.BrokerAddress()}
 	case service.PhaseError:
+		if localNetworkBlocked(a.mqttStatus.LastError, a.cfg.Broker.Host) {
+			return statusInfo{phase: phase, color: colorOrange, glyph: iconAlert, label: locales.StatusConnectionError(),
+				headline: locales.LocalNetworkBlocked(), detail: locales.LocalNetworkBlockedBody(),
+				actionLabel: locales.OpenLocalNetworkSettings(), action: openLocalNetworkSettings}
+		}
 		return statusInfo{phase: phase, color: colorRed, glyph: iconAlert, label: locales.StatusConnectionError(),
 			headline: locales.CannotReachBroker(), detail: displayOr(a.mqttStatus.LastError, locales.BrokerErrorFallback())}
 	default:
 		return statusInfo{phase: service.PhaseIdle, color: colorGray, glyph: iconBroker, label: locales.StatusPaused(),
 			headline: locales.WaitingToConnect(), detail: locales.WaitingDetail()}
 	}
+}
+
+// localNetworkBlocked reports whether an error connecting to a broker on
+// the local network is macOS's Local Network privacy refusing it: the
+// system then answers that there is no route to the host. It asks once,
+// and an app whose signature changed, as an update signed ad hoc, is
+// refused until allowed again.
+func localNetworkBlocked(err, host string) bool {
+	if !strings.Contains(err, "no route to host") {
+		return false
+	}
+	host = strings.TrimSpace(host)
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsPrivate() || ip.IsLinkLocalUnicast()
+	}
+	return strings.HasSuffix(host, ".local") || !strings.Contains(host, ".")
+}
+
+func openLocalNetworkSettings() {
+	mygo.Shell.OpenExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")
 }
 
 func displayOr(value, fallback string) string {

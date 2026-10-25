@@ -234,5 +234,8 @@
   "entityAppUptime": "运行时长",
   "entityAppVersion": "应用版本",
   "entityHostname": "主机名",
-  "entityRefresh": "刷新"
+  "entityRefresh": "刷新",
+  "localNetworkBlocked": "macOS 阻止了本地网络访问",
+  "localNetworkBlockedBody": "请在“系统设置 › 隐私与安全性 › 本地网络”中允许 Mac2MQTT，然后重新连接。",
+  "openLocalNetworkSettings": "打开设置"
 }

@@ -79,7 +79,10 @@ func (a *app) statusCard(c *ui.Context, t *ui.Theme, p palette) {
 				ui.Text(c, st.headline).FontSize(15).FontWeight(650).Wrap()
 				ui.Text(c, st.detail).FontSize(12).TextColor(t.TextMuted).Wrap()
 			})
-			if a.cfg.Reporting.Enabled == false {
+			switch {
+			case st.action != nil:
+				ui.Button(c, st.actionLabel).OnClick(st.action)
+			case a.cfg.Reporting.Enabled == false:
 				ui.Button(c, locales.OpenSettings()).OnClick(func() { a.tab = tabSettings })
 			}
 		})

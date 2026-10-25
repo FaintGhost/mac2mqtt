@@ -2389,3 +2389,33 @@ func EntityRefresh() string { return In(i18n.Locale()).EntityRefresh() }
 func (msgs Messages) EntityRefresh() string {
 	return Catalog.Format(msgs.locale, "entityRefresh", nil)
 }
+
+// LocalNetworkBlocked says "macOS is blocking the local network"
+// in the language the app shows.
+func LocalNetworkBlocked() string { return In(i18n.Locale()).LocalNetworkBlocked() }
+
+// LocalNetworkBlocked says "macOS is blocking the local network"
+// in the language of msgs.
+func (msgs Messages) LocalNetworkBlocked() string {
+	return Catalog.Format(msgs.locale, "localNetworkBlocked", nil)
+}
+
+// LocalNetworkBlockedBody says "Allow Mac2MQTT in System Settings › Privacy & Security › Local Network, then reconnect."
+// in the language the app shows.
+func LocalNetworkBlockedBody() string { return In(i18n.Locale()).LocalNetworkBlockedBody() }
+
+// LocalNetworkBlockedBody says "Allow Mac2MQTT in System Settings › Privacy & Security › Local Network, then reconnect."
+// in the language of msgs.
+func (msgs Messages) LocalNetworkBlockedBody() string {
+	return Catalog.Format(msgs.locale, "localNetworkBlockedBody", nil)
+}
+
+// OpenLocalNetworkSettings says "Open Settings"
+// in the language the app shows.
+func OpenLocalNetworkSettings() string { return In(i18n.Locale()).OpenLocalNetworkSettings() }
+
+// OpenLocalNetworkSettings says "Open Settings"
+// in the language of msgs.
+func (msgs Messages) OpenLocalNetworkSettings() string {
+	return Catalog.Format(msgs.locale, "openLocalNetworkSettings", nil)
+}

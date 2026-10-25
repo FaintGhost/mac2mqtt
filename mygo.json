@@ -8,7 +8,8 @@
     "minimumSystemVersion": "13.0",
     "infoPlist": {
       "LSUIElement": true,
-      "NSHumanReadableCopyright": "© 2026 Mac2MQTT contributors"
+      "NSHumanReadableCopyright": "© 2026 Mac2MQTT contributors",
+      "NSLocalNetworkUsageDescription": "Mac2MQTT connects to your MQTT broker, which is often on your local network."
     }
   },
   "i18n": {

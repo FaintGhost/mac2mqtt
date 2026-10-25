@@ -142,3 +142,29 @@ func TestStatus(t *testing.T) {
 		t.Errorf("paused = %+v", st)
 	}
 }
+
+func TestLocalNetworkBlocked(t *testing.T) {
+	refused := "network Error : dial tcp 192.168.50.86:1883: connect: no route to host"
+	for _, c := range []struct {
+		err, host string
+		want      bool
+	}{
+		{refused, "192.168.50.86", true},
+		{refused, "homeassistant.local", true},
+		{refused, "homeassistant", true},
+		{refused, "10.0.0.2", true},
+		{"dial tcp 100.101.164.49:1883: connect: no route to host", "100.101.164.49", false}, // Tailscale's, not local
+		{refused, "mqtt.example.com", false},
+		{"connection refused", "192.168.50.86", false},
+	} {
+		if got := localNetworkBlocked(c.err, c.host); got != c.want {
+			t.Errorf("localNetworkBlocked(%q, %q) = %v, want %v", c.err, c.host, got, c.want)
+		}
+	}
+	a := connectedTestApp()
+	a.cfg.Broker.Host = "192.168.50.86"
+	a.mqttStatus.Phase, a.mqttStatus.LastError = service.PhaseError, refused
+	if st := a.status(); st.headline != locales.LocalNetworkBlocked() || st.action == nil {
+		t.Errorf("status = %+v, want the Local Network hint with its action", st)
+	}
+}

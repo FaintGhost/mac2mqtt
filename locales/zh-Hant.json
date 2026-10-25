@@ -234,5 +234,8 @@
   "entityAppUptime": "執行時間",
   "entityAppVersion": "App 版本",
   "entityHostname": "主機名稱",
-  "entityRefresh": "重新整理"
+  "entityRefresh": "重新整理",
+  "localNetworkBlocked": "macOS 阻擋了本地網路存取",
+  "localNetworkBlockedBody": "請在「系統設定 › 隱私權與安全性 › 區域網路」中允許 Mac2MQTT，然後重新連線。",
+  "openLocalNetworkSettings": "打開設定"
 }
