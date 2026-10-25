@@ -282,3 +282,24 @@ func TestNextTrackAvailability(t *testing.T) {
 		}
 	}
 }
+
+func TestNamesAndEntityIDs(t *testing.T) {
+	opts := testOptions()
+	opts.Device.Name = "Mac mini"
+	opts.Names = map[string]string{"now_playing": "正在播放"}
+	for _, entity := range SystemEntities(opts) {
+		switch entity.ObjectID {
+		case "now_playing":
+			if entity.Config["name"] != "正在播放" || entity.Config["default_entity_id"] != "sensor.mac_mini_now_playing" {
+				t.Errorf("now playing = %v, %v", entity.Config["name"], entity.Config["default_entity_id"])
+			}
+		case "lock_screen":
+			if entity.Config["name"] != "Lock Screen" || entity.Config["default_entity_id"] != "button.mac_mini_lock_screen" {
+				t.Errorf("lock screen = %v, %v", entity.Config["name"], entity.Config["default_entity_id"])
+			}
+		}
+		if entity.Component == "media_player" && entity.Config["default_entity_id"] != nil {
+			t.Error("the media player, another integration's, has a default entity ID")
+		}
+	}
+}

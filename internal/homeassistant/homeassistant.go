@@ -71,6 +71,9 @@ type Options struct {
 	HasBattery bool
 	// Disabled names the groups the user does not publish.
 	Disabled map[string]bool
+	// Names are the entities' names by object ID, in the language Home
+	// Assistant should show; missing ones are English.
+	Names map[string]string
 	// HasCamera and HasMicrophone add the entities telling whether they
 	// are in use: a Mac without them has nothing to tell.
 	HasCamera     bool
@@ -148,6 +151,21 @@ func SystemEntities(opts Options) []Entity {
 // options leave out: those whose retained discovery documents the service
 // clears when they are not published.
 func AllEntities(opts Options) []Entity {
+	entities := allEntities(opts)
+	// The entity IDs are English, whatever language names the entities,
+	// as automations and the universal media player's YAML name them:
+	// sensor.mac_mini_now_playing. Home Assistant takes them only when
+	// it adds an entity, so renaming one later keeps them.
+	device := slugify(opts.Device.Name)
+	for _, e := range entities {
+		if e.Component != "media_player" {
+			e.Config["default_entity_id"] = e.Component + "." + device + "_" + e.ObjectID
+		}
+	}
+	return entities
+}
+
+func allEntities(opts Options) []Entity {
 	base := strings.TrimRight(strings.TrimSpace(opts.BaseTopic), "/")
 	stateTopic := strings.TrimSpace(opts.StateTopic)
 	if stateTopic == "" {
@@ -420,6 +438,9 @@ func withCommonConfig(opts Options, availabilityTopic, objectID, name string, cf
 	out := make(map[string]any, len(cfg)+7)
 	for key, value := range cfg {
 		out[key] = value
+	}
+	if localized := opts.Names[objectID]; localized != "" {
+		name = localized
 	}
 	out["name"] = name
 	out["unique_id"] = uniqueID(opts.Device.ID, objectID)

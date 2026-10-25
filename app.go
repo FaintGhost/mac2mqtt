@@ -134,6 +134,8 @@ func (a *app) ready() {
 		}
 		a.installMenu()
 		a.updateTray()
+		// Home Assistant shows the entities' names in the new language.
+		a.restartService()
 	})
 
 	// The window opens on the first run, to set up; otherwise the app
@@ -529,6 +531,7 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 		Config:        cfg,
 		Version:       a.version,
 		CleanupTopics: cleanup,
+		EntityNames:   entityNames(),
 		Snapshot:      a.snapshot,
 		OnStatus:      a.setStatus,
 		OnState: func(s system.Snapshot) {

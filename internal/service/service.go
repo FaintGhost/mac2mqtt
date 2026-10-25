@@ -62,6 +62,8 @@ type Options struct {
 	// Notify shows a notification, and Say speaks text.
 	Notify func(ctx context.Context, title, message string) error
 	Say    func(context.Context, string) error
+	// EntityNames are the entities' names in the app's language.
+	EntityNames map[string]string
 	// Shortcuts lists the user's shortcuts, and RunShortcut runs one.
 	Shortcuts   func(context.Context) []string
 	RunShortcut func(ctx context.Context, name, input string) error
@@ -854,6 +856,7 @@ func (m *Manager) entityOptions(probe system.Snapshot) homeassistant.Options {
 		HasBattery: probe.Power.BatteryPercent != nil || probe.Power.Charging != nil,
 		Disabled:   cfg.HomeAssistant.Disabled(),
 		Shortcuts:  m.shortcuts,
+		Names:      m.opts.EntityNames,
 		// What the Mac has now, as a camera plugged in after launch.
 		HasCamera:     m.lastActivity.HasCamera,
 		HasMicrophone: m.lastActivity.HasMicrophone,

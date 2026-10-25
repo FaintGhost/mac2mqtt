@@ -2109,3 +2109,283 @@ func NotOfferedByPlayer() string { return In(i18n.Locale()).NotOfferedByPlayer()
 func (msgs Messages) NotOfferedByPlayer() string {
 	return Catalog.Format(msgs.locale, "notOfferedByPlayer", nil)
 }
+
+// EntityNetworkConnectivity says "Network Connectivity"
+// in the language the app shows.
+func EntityNetworkConnectivity() string { return In(i18n.Locale()).EntityNetworkConnectivity() }
+
+// EntityNetworkConnectivity says "Network Connectivity"
+// in the language of msgs.
+func (msgs Messages) EntityNetworkConnectivity() string {
+	return Catalog.Format(msgs.locale, "entityNetworkConnectivity", nil)
+}
+
+// EntityPowerSource says "Power Source"
+// in the language the app shows.
+func EntityPowerSource() string { return In(i18n.Locale()).EntityPowerSource() }
+
+// EntityPowerSource says "Power Source"
+// in the language of msgs.
+func (msgs Messages) EntityPowerSource() string {
+	return Catalog.Format(msgs.locale, "entityPowerSource", nil)
+}
+
+// EntityCharging says "Charging"
+// in the language the app shows.
+func EntityCharging() string { return In(i18n.Locale()).EntityCharging() }
+
+// EntityCharging says "Charging"
+// in the language of msgs.
+func (msgs Messages) EntityCharging() string {
+	return Catalog.Format(msgs.locale, "entityCharging", nil)
+}
+
+// EntityBattery says "Battery"
+// in the language the app shows.
+func EntityBattery() string { return In(i18n.Locale()).EntityBattery() }
+
+// EntityBattery says "Battery"
+// in the language of msgs.
+func (msgs Messages) EntityBattery() string {
+	return Catalog.Format(msgs.locale, "entityBattery", nil)
+}
+
+// EntityScreenLocked says "Screen Locked"
+// in the language the app shows.
+func EntityScreenLocked() string { return In(i18n.Locale()).EntityScreenLocked() }
+
+// EntityScreenLocked says "Screen Locked"
+// in the language of msgs.
+func (msgs Messages) EntityScreenLocked() string {
+	return Catalog.Format(msgs.locale, "entityScreenLocked", nil)
+}
+
+// EntityIdleTime says "Idle Time"
+// in the language the app shows.
+func EntityIdleTime() string { return In(i18n.Locale()).EntityIdleTime() }
+
+// EntityIdleTime says "Idle Time"
+// in the language of msgs.
+func (msgs Messages) EntityIdleTime() string {
+	return Catalog.Format(msgs.locale, "entityIdleTime", nil)
+}
+
+// EntityDisplay says "Display"
+// in the language the app shows.
+func EntityDisplay() string { return In(i18n.Locale()).EntityDisplay() }
+
+// EntityDisplay says "Display"
+// in the language of msgs.
+func (msgs Messages) EntityDisplay() string {
+	return Catalog.Format(msgs.locale, "entityDisplay", nil)
+}
+
+// EntityLockScreen says "Lock Screen"
+// in the language the app shows.
+func EntityLockScreen() string { return In(i18n.Locale()).EntityLockScreen() }
+
+// EntityLockScreen says "Lock Screen"
+// in the language of msgs.
+func (msgs Messages) EntityLockScreen() string {
+	return Catalog.Format(msgs.locale, "entityLockScreen", nil)
+}
+
+// EntityDisplaySleep says "Sleep Display"
+// in the language the app shows.
+func EntityDisplaySleep() string { return In(i18n.Locale()).EntityDisplaySleep() }
+
+// EntityDisplaySleep says "Sleep Display"
+// in the language of msgs.
+func (msgs Messages) EntityDisplaySleep() string {
+	return Catalog.Format(msgs.locale, "entityDisplaySleep", nil)
+}
+
+// EntityDisplayWake says "Wake Display"
+// in the language the app shows.
+func EntityDisplayWake() string { return In(i18n.Locale()).EntityDisplayWake() }
+
+// EntityDisplayWake says "Wake Display"
+// in the language of msgs.
+func (msgs Messages) EntityDisplayWake() string {
+	return Catalog.Format(msgs.locale, "entityDisplayWake", nil)
+}
+
+// EntitySleep says "Sleep"
+// in the language the app shows.
+func EntitySleep() string { return In(i18n.Locale()).EntitySleep() }
+
+// EntitySleep says "Sleep"
+// in the language of msgs.
+func (msgs Messages) EntitySleep() string {
+	return Catalog.Format(msgs.locale, "entitySleep", nil)
+}
+
+// EntityCameraInUse says "Camera In Use"
+// in the language the app shows.
+func EntityCameraInUse() string { return In(i18n.Locale()).EntityCameraInUse() }
+
+// EntityCameraInUse says "Camera In Use"
+// in the language of msgs.
+func (msgs Messages) EntityCameraInUse() string {
+	return Catalog.Format(msgs.locale, "entityCameraInUse", nil)
+}
+
+// EntityMicrophoneInUse says "Microphone In Use"
+// in the language the app shows.
+func EntityMicrophoneInUse() string { return In(i18n.Locale()).EntityMicrophoneInUse() }
+
+// EntityMicrophoneInUse says "Microphone In Use"
+// in the language of msgs.
+func (msgs Messages) EntityMicrophoneInUse() string {
+	return Catalog.Format(msgs.locale, "entityMicrophoneInUse", nil)
+}
+
+// EntityVolume says "Volume"
+// in the language the app shows.
+func EntityVolume() string { return In(i18n.Locale()).EntityVolume() }
+
+// EntityVolume says "Volume"
+// in the language of msgs.
+func (msgs Messages) EntityVolume() string {
+	return Catalog.Format(msgs.locale, "entityVolume", nil)
+}
+
+// EntityMute says "Mute"
+// in the language the app shows.
+func EntityMute() string { return In(i18n.Locale()).EntityMute() }
+
+// EntityMute says "Mute"
+// in the language of msgs.
+func (msgs Messages) EntityMute() string {
+	return Catalog.Format(msgs.locale, "entityMute", nil)
+}
+
+// EntityMediaState says "Media State"
+// in the language the app shows.
+func EntityMediaState() string { return In(i18n.Locale()).EntityMediaState() }
+
+// EntityMediaState says "Media State"
+// in the language of msgs.
+func (msgs Messages) EntityMediaState() string {
+	return Catalog.Format(msgs.locale, "entityMediaState", nil)
+}
+
+// EntityNowPlaying says "Now Playing"
+// in the language the app shows.
+func EntityNowPlaying() string { return In(i18n.Locale()).EntityNowPlaying() }
+
+// EntityNowPlaying says "Now Playing"
+// in the language of msgs.
+func (msgs Messages) EntityNowPlaying() string {
+	return Catalog.Format(msgs.locale, "entityNowPlaying", nil)
+}
+
+// EntityMediaPlayPause says "Play/Pause"
+// in the language the app shows.
+func EntityMediaPlayPause() string { return In(i18n.Locale()).EntityMediaPlayPause() }
+
+// EntityMediaPlayPause says "Play/Pause"
+// in the language of msgs.
+func (msgs Messages) EntityMediaPlayPause() string {
+	return Catalog.Format(msgs.locale, "entityMediaPlayPause", nil)
+}
+
+// EntityMediaNext says "Next Track"
+// in the language the app shows.
+func EntityMediaNext() string { return In(i18n.Locale()).EntityMediaNext() }
+
+// EntityMediaNext says "Next Track"
+// in the language of msgs.
+func (msgs Messages) EntityMediaNext() string {
+	return Catalog.Format(msgs.locale, "entityMediaNext", nil)
+}
+
+// EntityMediaPrevious says "Previous Track"
+// in the language the app shows.
+func EntityMediaPrevious() string { return In(i18n.Locale()).EntityMediaPrevious() }
+
+// EntityMediaPrevious says "Previous Track"
+// in the language of msgs.
+func (msgs Messages) EntityMediaPrevious() string {
+	return Catalog.Format(msgs.locale, "entityMediaPrevious", nil)
+}
+
+// EntityNotify says "Notification"
+// in the language the app shows.
+func EntityNotify() string { return In(i18n.Locale()).EntityNotify() }
+
+// EntityNotify says "Notification"
+// in the language of msgs.
+func (msgs Messages) EntityNotify() string {
+	return Catalog.Format(msgs.locale, "entityNotify", nil)
+}
+
+// EntitySay says "Speak"
+// in the language the app shows.
+func EntitySay() string { return In(i18n.Locale()).EntitySay() }
+
+// EntitySay says "Speak"
+// in the language of msgs.
+func (msgs Messages) EntitySay() string {
+	return Catalog.Format(msgs.locale, "entitySay", nil)
+}
+
+// EntityRunShortcut says "Run Shortcut"
+// in the language the app shows.
+func EntityRunShortcut() string { return In(i18n.Locale()).EntityRunShortcut() }
+
+// EntityRunShortcut says "Run Shortcut"
+// in the language of msgs.
+func (msgs Messages) EntityRunShortcut() string {
+	return Catalog.Format(msgs.locale, "entityRunShortcut", nil)
+}
+
+// EntityLastUpdate says "Last Update"
+// in the language the app shows.
+func EntityLastUpdate() string { return In(i18n.Locale()).EntityLastUpdate() }
+
+// EntityLastUpdate says "Last Update"
+// in the language of msgs.
+func (msgs Messages) EntityLastUpdate() string {
+	return Catalog.Format(msgs.locale, "entityLastUpdate", nil)
+}
+
+// EntityAppUptime says "App Uptime"
+// in the language the app shows.
+func EntityAppUptime() string { return In(i18n.Locale()).EntityAppUptime() }
+
+// EntityAppUptime says "App Uptime"
+// in the language of msgs.
+func (msgs Messages) EntityAppUptime() string {
+	return Catalog.Format(msgs.locale, "entityAppUptime", nil)
+}
+
+// EntityAppVersion says "App Version"
+// in the language the app shows.
+func EntityAppVersion() string { return In(i18n.Locale()).EntityAppVersion() }
+
+// EntityAppVersion says "App Version"
+// in the language of msgs.
+func (msgs Messages) EntityAppVersion() string {
+	return Catalog.Format(msgs.locale, "entityAppVersion", nil)
+}
+
+// EntityHostname says "Hostname"
+// in the language the app shows.
+func EntityHostname() string { return In(i18n.Locale()).EntityHostname() }
+
+// EntityHostname says "Hostname"
+// in the language of msgs.
+func (msgs Messages) EntityHostname() string {
+	return Catalog.Format(msgs.locale, "entityHostname", nil)
+}
+
+// EntityRefresh says "Refresh"
+// in the language the app shows.
+func EntityRefresh() string { return In(i18n.Locale()).EntityRefresh() }
+
+// EntityRefresh says "Refresh"
+// in the language of msgs.
+func (msgs Messages) EntityRefresh() string {
+	return Catalog.Format(msgs.locale, "entityRefresh", nil)
+}
