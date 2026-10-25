@@ -7,8 +7,6 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater/native"
-
-	"mac2mqtt/locales"
 )
 
 func main() {
@@ -16,8 +14,17 @@ func main() {
 	// Updates from the GitHub releases, in the update window that Mac
 	// users know from Sparkle, drawn in native UI.
 	mygo.Use(native.Plugin)
-	mygo.App.SetName(locales.AppName())
+	// Not translated: the name keys the user data directory, which holds
+	// the configuration, and the single instance lock.
+	mygo.App.SetName("Mac2MQTT")
 	mygo.App.SetVersion(a.version)
+	// One instance at a time: two would publish as one device with one
+	// client ID, each disconnecting the other at the broker. Opening the
+	// app again shows the running one's window instead.
+	if !mygo.App.RequestSingleInstanceLock() {
+		return
+	}
+	mygo.App.OnSecondInstance(func([]string, string) { a.showWindow() })
 	// A menu-bar utility: no Dock icon, no app switcher entry.
 	mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
 	mygo.App.OnWindowAllClosed(func() {})

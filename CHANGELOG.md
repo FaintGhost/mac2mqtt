@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+- One instance at a time: opening Mac2MQTT again shows the running one's
+  window, rather than starting another that would disconnect it at the
+  broker.
+
 ## 0.3.1
 
 - The tiles of This Mac share two equal columns: a last tile alone on its
