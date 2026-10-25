@@ -57,7 +57,6 @@ jobs:
           mv "dist/darwin-universal/Mac2MQTT $VERSION.dmg" "release/Mac2MQTT-$VERSION-universal.dmg"
           # The updates keep the names their manifests point to.
           cp dist/darwin-*/*.tar.gz dist/darwin-*/update-darwin-*.json release/
-          cp dist/darwin-*/*.delta release/ 2>/dev/null || true
           cd release && shasum -a 256 *.dmg *.tar.gz > SHA256SUMS.txt && cat SHA256SUMS.txt && ls -la
 
       - name: Publish the release

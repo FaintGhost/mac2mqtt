@@ -17,6 +17,7 @@
   },
   "updates": {
     "publicKey": "nCcEaupjulsBcEex3G9l5Ha9WEbIqc50kjVW2hvce0s=",
-    "github": "FaintGhost/mac2mqtt"
+    "github": "FaintGhost/mac2mqtt",
+    "deltas": 0
   }
 }
