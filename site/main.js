@@ -42,7 +42,7 @@ const zh = {
   "install.eyebrow": "安装",
   "install.title": "三步，一分钟。",
   "s1.t": "下载",
-  "s1.d": "打开磁盘映像，把 Mac2MQTT 拖到“应用程序”。首次打开时，右键点击它并选择“打开”。",
+  "s1.d": "打开磁盘映像，把 Mac2MQTT 拖到“应用程序”。也可以用 Homebrew 安装：",
   "s2.t": "填写 Broker",
   "s2.d": "使用 Home Assistant 的 MQTT 集成所用的那个 Broker（开启自动发现）：地址、端口和账号。",
   "s3.t": "找到你的 Mac",

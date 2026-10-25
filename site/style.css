@@ -161,6 +161,12 @@ p { margin: 0; }
 .steps li { border-top: 1px solid var(--text); padding-top: 22px; }
 .num { display: block; font: 500 13px "JetBrains Mono", ui-monospace, monospace; color: var(--faint); margin-bottom: 18px; }
 .steps p { color: var(--muted); font-size: 14.5px; }
+.brew {
+  display: block; margin-top: 14px; padding: 10px 12px;
+  font: 12.5px "JetBrains Mono", ui-monospace, Menlo, monospace;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  overflow-x: auto; white-space: nowrap; user-select: all;
+}
 
 /* MyGo. */
 .mygo { display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; }
