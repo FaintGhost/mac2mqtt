@@ -1,0 +1,150 @@
+package system
+
+import (
+	"context"
+	"os"
+	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+)
+
+// Collector gathers a Snapshot. Its mutable state is safe for concurrent use.
+type Collector struct {
+	version string
+	start   time.Time
+	locked  atomic.Bool
+
+	goos   string
+	runner commandRunner
+
+	osVersionOnce sync.Once
+	osVersion     string
+	hardwareOnce  sync.Once
+	hardware      Hardware
+}
+
+// NewCollector creates a Collector using the real macOS commands. The version
+// is the application version reported in each snapshot.
+func NewCollector(version string) *Collector {
+	return newCollector(version, runtime.GOOS, execCommandRunner{})
+}
+
+// newCollector is the testable constructor: platform and command execution are
+// injected so tests never touch the host's hardware or audio settings.
+func newCollector(version, goos string, runner commandRunner) *Collector {
+	return &Collector{
+		version: version,
+		start:   time.Now(),
+		goos:    goos,
+		runner:  runner,
+	}
+}
+
+// SetLocked updates the session lock state. It is safe to call from any
+// goroutine.
+func (c *Collector) SetLocked(locked bool) {
+	c.locked.Store(locked)
+}
+
+// Snapshot collects the current system state. Commands are only executed on
+// macOS; runtime-only state is supplied by the caller.
+func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
+	now := time.Now()
+	hostname, _ := os.Hostname()
+
+	var audio *AudioState
+	if c.goos == "darwin" {
+		if state, err := readAudio(ctx, c.runner); err == nil {
+			audio = state
+		}
+	}
+
+	var media *MediaInfo
+	if rt.SkipMedia == false {
+		media = c.Media(ctx)
+	}
+	return Snapshot{
+		LastSeen: now,
+		App: AppInfo{
+			Version:       c.version,
+			UptimeSeconds: nonNegativeSeconds(time.Since(c.start)),
+		},
+		Device: DeviceInfo{
+			Hostname:  hostname,
+			OSVersion: c.detectOSVersion(ctx),
+			Arch:      runtime.GOARCH,
+			Model:     c.detectHardware(ctx).Name,
+			ModelID:   c.detectHardware(ctx).ID,
+		},
+		Network: NetworkInfo{
+			Online:  rt.NetworkOnline,
+			Metered: rt.NetworkMetered,
+		},
+		Power: c.collectPower(ctx, rt),
+		Session: SessionInfo{
+			Locked:      c.screenLocked(ctx),
+			IdleSeconds: nonNegativeSeconds(rt.Idle),
+		},
+		Audio: audio,
+		Media: media,
+	}
+}
+
+// screenLocked reads whether the screen is locked, falling back to what
+// the last lock or unlock notification said.
+func (c *Collector) screenLocked(ctx context.Context) bool {
+	if c.goos == "darwin" {
+		if locked, err := readScreenLocked(ctx, c.runner, os.Getuid()); err == nil {
+			c.locked.Store(locked)
+			return locked
+		}
+	}
+	return c.locked.Load()
+}
+
+func nonNegativeSeconds(duration time.Duration) int64 {
+	if duration <= 0 {
+		return 0
+	}
+	return int64(duration / time.Second)
+}
+
+// detectOSVersion caches the result of sw_vers so periodic snapshots do not
+// spawn a process every time. Failures fall back to the Go platform name.
+func (c *Collector) detectOSVersion(ctx context.Context) string {
+	if c.goos != "darwin" {
+		return c.goos
+	}
+
+	c.osVersionOnce.Do(func() {
+		output, err := runCommand(ctx, c.runner, "/usr/bin/sw_vers", "-productVersion")
+		if err == nil {
+			if version := strings.TrimSpace(string(output)); version != "" {
+				c.osVersion = version
+				return
+			}
+		}
+		c.osVersion = c.goos
+	})
+	return c.osVersion
+}
+
+// detectHardware reads the model of this Mac once: it does not change.
+func (c *Collector) detectHardware(ctx context.Context) Hardware {
+	if c.goos != "darwin" {
+		return Hardware{}
+	}
+	c.hardwareOnce.Do(func() { c.hardware = readHardware(ctx, c.runner) })
+	return c.hardware
+}
+
+// Media reads the system-wide Now Playing item. It returns nil when nothing
+// is playing or the system does not expose MediaRemote.
+func (c *Collector) Media(ctx context.Context) *MediaInfo {
+	if c.goos != "darwin" {
+		return nil
+	}
+	return readMedia(ctx, c.runner)
+}

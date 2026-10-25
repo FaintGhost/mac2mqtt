@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # the release, and the uploads to it
+
+jobs:
+  release:
+    runs-on: macos-latest
+    env:
+      CGO_ENABLED: "0"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Check the tag matches mygo.json
+        id: version
+        run: |
+          version="$(plutil -extract version raw -o - mygo.json)"
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match version $version in mygo.json"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - run: go test ./...
+
+      - name: Build the disk images
+        run: go tool mygo build -platform darwin/arm64,darwin/amd64,darwin/universal -o dist
+
+      - name: Name the disk images
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir release
+          mv "dist/darwin-arm64/Mac2MQTT $VERSION arm64.dmg" "release/Mac2MQTT-$VERSION-arm64.dmg"
+          mv "dist/darwin-amd64/Mac2MQTT $VERSION amd64.dmg" "release/Mac2MQTT-$VERSION-amd64.dmg"
+          mv "dist/darwin-universal/Mac2MQTT $VERSION.dmg" "release/Mac2MQTT-$VERSION-universal.dmg"
+          cd release && shasum -a 256 *.dmg > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" release/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" release/* --verify-tag \
+              --title "Mac2MQTT $GITHUB_REF_NAME" --generate-notes
+          fi

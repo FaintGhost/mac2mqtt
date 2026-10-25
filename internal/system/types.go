@@ -1,0 +1,79 @@
+// Package system collects macOS system status and controls system audio.
+package system
+
+import "time"
+
+// AudioState is the current output volume and mute state.
+type AudioState struct {
+	Volume int  `json:"volume"`
+	Muted  bool `json:"muted"`
+}
+
+// AppInfo describes this application instance.
+type AppInfo struct {
+	Version       string `json:"version"`
+	UptimeSeconds int64  `json:"uptime_seconds"`
+}
+
+// DeviceInfo describes the host running the application.
+type DeviceInfo struct {
+	Hostname  string `json:"hostname"`
+	OSVersion string `json:"os_version"`
+	Arch      string `json:"arch"`
+	Model     string `json:"model,omitempty"`    // "Mac mini"
+	ModelID   string `json:"model_id,omitempty"` // "Mac16,10"
+}
+
+// NetworkInfo describes the network state supplied by the app layer.
+type NetworkInfo struct {
+	Online  bool `json:"online"`
+	Metered bool `json:"metered"`
+}
+
+// PowerInfo describes the current power source and, when present, the battery.
+type PowerInfo struct {
+	OnBattery      bool     `json:"on_battery"`
+	Source         string   `json:"source"`
+	BatteryPercent *float64 `json:"battery_percent,omitempty"`
+	Charging       *bool    `json:"charging,omitempty"`
+}
+
+// SessionInfo describes the current user session.
+type SessionInfo struct {
+	Locked      bool  `json:"locked"`
+	IdleSeconds int64 `json:"idle_seconds"`
+}
+
+// MediaInfo describes the system-wide Now Playing item.
+type MediaInfo struct {
+	State           string  `json:"state"` // playing, paused or idle
+	Title           string  `json:"title,omitempty"`
+	Artist          string  `json:"artist,omitempty"`
+	Album           string  `json:"album,omitempty"`
+	AppName         string  `json:"app_name,omitempty"`
+	DurationSeconds float64 `json:"duration_seconds,omitempty"`
+	PositionSeconds float64 `json:"position_seconds,omitempty"`
+	PlaybackRate    float64 `json:"playback_rate,omitempty"`
+}
+
+// Snapshot is one point-in-time report of system status.
+type Snapshot struct {
+	LastSeen time.Time   `json:"last_seen"`
+	App      AppInfo     `json:"app"`
+	Device   DeviceInfo  `json:"device"`
+	Network  NetworkInfo `json:"network"`
+	Power    PowerInfo   `json:"power"`
+	Session  SessionInfo `json:"session"`
+	Audio    *AudioState `json:"audio,omitempty"`
+	Media    *MediaInfo  `json:"media,omitempty"`
+}
+
+// Runtime contains values that only the MyGo application layer can supply.
+type Runtime struct {
+	NetworkOnline  bool
+	NetworkMetered bool
+	OnBattery      bool
+	Idle           time.Duration
+	// SkipMedia leaves Now Playing out, when it is not published.
+	SkipMedia bool
+}

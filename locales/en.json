@@ -1,0 +1,261 @@
+{
+  "@@locale": "en",
+  "appName": "Mac2MQTT",
+  "appTagline": "Home Assistant bridge",
+  "versionShort": "v{version}",
+  "versionLabel": "Version {version}",
+  "navOverview": "Overview",
+  "navSettings": "Settings",
+  "navAbout": "About",
+  "statusNotConfigured": "Not configured",
+  "statusConnected": "Connected",
+  "statusConnecting": "Connecting",
+  "statusConnectionError": "Connection error",
+  "statusPaused": "Paused",
+  "noBrokerConfigured": "No broker configured",
+  "pageOverviewTitle": "Overview",
+  "pageSettingsTitle": "Settings",
+  "pageAboutTitle": "About",
+  "onboardingTitle": "Connect your Mac to Home Assistant",
+  "onboardingBody": "Mac2MQTT publishes native macOS status through MQTT discovery, so Home Assistant creates the device and entities automatically.",
+  "stepBrokerTitle": "MQTT broker",
+  "stepBrokerBody": "Host, port and credentials",
+  "stepDiscoveryTitle": "Discovery",
+  "stepDiscoveryBody": "Default prefix homeassistant",
+  "stepSaveTitle": "Save",
+  "stepSaveBody": "Entities appear in Home Assistant",
+  "openMQTTSettings": "Open MQTT settings",
+  "mqttIntegrationDocs": "MQTT integration docs",
+  "pausedTitle": "Reporting is paused",
+  "pausedBody": "Mac2MQTT is not publishing. Resume reporting in Settings or from the menu bar.",
+  "openSettings": "Open settings",
+  "reportingToHomeAssistant": "Reporting to Home Assistant",
+  "connectingHeadline": "Connecting to your broker",
+  "cannotReachBroker": "Cannot reach your broker",
+  "brokerErrorFallback": "Check the broker address, credentials, and network.",
+  "waitingToConnect": "Waiting to connect",
+  "waitingDetail": "Reporting is enabled. Reconnect to start the MQTT session.",
+  "lastReportStatLabel": "Last report",
+  "reportsStatLabel": "Reports",
+  "never": "Never",
+  "publishNow": "Publish now",
+  "reconnect": "Reconnect",
+  "metricNetwork": "Network",
+  "metricPower": "Power",
+  "metricVolume": "Volume",
+  "collecting": "Collecting…",
+  "waitingFirstReport": "Waiting for the first report",
+  "networkOnline": "Online",
+  "networkOffline": "Offline",
+  "internetRouteAvailable": "Internet route available",
+  "noInternetRoute": "No internet route",
+  "meteredConnection": "Online · metered connection",
+  "powerSource": "Power source",
+  "chargingStatus": "charging",
+  "audioUnavailable": "Unavailable",
+  "noOutputDeviceReadable": "No output device readable",
+  "unmuted": "Unmuted",
+  "muted": "Muted",
+  "waitingSessionState": "Waiting for session state",
+  "locked": "Locked",
+  "powerAC": "AC Power",
+  "powerBattery": "Battery",
+  "unknown": "Unknown",
+  "idleSeconds": "{n, plural, one {#s idle} other {#s idle}}",
+  "idleMinutes": "{n, plural, one {#m idle} other {#m idle}}",
+  "idleHoursMinutes": "{h, number}h {m, number}m idle",
+  "homeAssistantTitle": "Home Assistant",
+  "discoveryLabel": "Discovery",
+  "baseTopicLabel": "Base topic",
+  "deviceLabel": "Device",
+  "mqttConnectionTitle": "MQTT connection",
+  "mqttConnectionDescription": "Point Mac2MQTT at the same broker Home Assistant uses.",
+  "reportingLabel": "Reporting",
+  "reportingHelp": "Publishes discovery and state while enabled.",
+  "hostLabel": "Host",
+  "portLabel": "Port",
+  "tlsLabel": "TLS",
+  "usernameLabel": "Username",
+  "passwordLabel": "Password",
+  "optionalPlaceholder": "optional",
+  "homeAssistantSettingsTitle": "Home Assistant",
+  "homeAssistantSettingsDescription": "Discovery creates entities under this prefix and topic root.",
+  "intervalLabel": "Interval",
+  "intervalHelp": "Seconds between periodic state reports.",
+  "advanced": "Advanced",
+  "identityRetentionDescription": "Usually the defaults are what you want.",
+  "clientIDLabel": "Client ID",
+  "clientIDHelp": "Changing this creates a new Home Assistant node ID.",
+  "retainStateLabel": "Retain state",
+  "retainStateHelp": "Keep the last JSON state on the broker.",
+  "skipVerifyLabel": "Skip verify",
+  "skipVerifyHelp": "Only for a trusted test broker.",
+  "useHostnameDefaults": "Use hostname defaults",
+  "openConfigFolder": "Open config folder",
+  "changesInfo": "You have unsaved changes. Saving reconnects to the broker.",
+  "saveReconnect": "Save & Reconnect",
+  "languageLabel": "Language",
+  "languageFollowSystem": "Follow System",
+  "languageEnglish": "English",
+  "languageSimplifiedChinese": "简体中文",
+  "languageTraditionalChinese": "繁體中文",
+  "aboutBody": "Reports this Mac's state to Home Assistant over MQTT discovery, with availability, automatic reconnect, and volume, mute and Now Playing.",
+  "homeAssistantMQTT": "Home Assistant MQTT",
+  "myGoFramework": "MyGo framework",
+  "topics": "Topics",
+  "topicsDescription": "Everything lives under your configured base topic.",
+  "quit": "Quit",
+  "quitBody": "Closing the window keeps Mac2MQTT running in the menu bar.",
+  "quitApp": "Quit Mac2MQTT",
+  "menuOpenApp": "Open Mac2MQTT",
+  "menuShowWindow": "Show Window",
+  "menuPublishNow": "Publish Now",
+  "menuReconnect": "Reconnect",
+  "menuSettings": "Settings…",
+  "errorReadConfig": "Could not read {path}: {error}. Fix the file or save settings to replace it.",
+  "errorNotConfigured": "MQTT broker is not configured yet.",
+  "errorEnterHost": "Enter your MQTT broker host, then save.",
+  "navEntities": "Entities",
+  "pageEntitiesTitle": "Entities",
+  "publishedToHomeAssistant": "Published to Home Assistant",
+  "entitiesFooter": "Changes apply at once: turning a group off removes its entities from Home Assistant.",
+  "refreshAlwaysPublished": "The Refresh button is always published.",
+  "stateTopicLabel": "State topic",
+  "entitiesStatLabel": "Entities",
+  "entityCount": "{n, plural, one {# entity} other {# entities}}",
+  "everySeconds": "{n, plural, one {Every second} other {Every # s}}",
+  "groupNetworkTitle": "Network",
+  "groupNetworkBody": "Whether this Mac is online",
+  "groupPowerTitle": "Power",
+  "groupPowerBody": "Power source, and battery and charging on laptops",
+  "groupSessionTitle": "Screen and Session",
+  "groupSessionBody": "Whether the screen is locked, and idle time",
+  "groupAudioTitle": "Sound",
+  "groupAudioBody": "Volume and mute, which Home Assistant can also set",
+  "groupMediaTitle": "Now Playing",
+  "groupMediaBody": "What plays, as Control Center shows it, with play, pause, next and previous",
+  "groupDiagnosticsTitle": "Diagnostics",
+  "groupDiagnosticsBody": "Last update, uptime, app version and hostname",
+  "nowPlaying": "Now Playing",
+  "nothingPlaying": "Nothing playing",
+  "nothingPlayingBody": "Music, videos in Safari or Chrome, and other apps show here as they play.",
+  "mediaNotPublished": "Now Playing is off",
+  "mediaNotPublishedBody": "Turn it on in Entities to see and publish what plays.",
+  "chooseEntities": "Entities…",
+  "mediaPlaying": "Playing",
+  "mediaPaused": "Paused",
+  "mediaIdle": "Idle",
+  "thisMac": "This Mac",
+  "metricScreen": "Screen",
+  "unlocked": "Unlocked",
+  "howItWorks": "How it works",
+  "generalTitle": "General",
+  "openAtLoginLabel": "Open at Login",
+  "openAtLoginHelp": "Keep reporting after the Mac restarts.",
+  "loginItemsApproval": "Allow Mac2MQTT in System Settings > General > Login Items.",
+  "openLoginItems": "Open Login Items",
+  "errorOpenAtLogin": "Could not change Open at Login: {error}",
+  "tlsHelp": "Usually on port 8883.",
+  "revert": "Revert",
+  "menuPauseReporting": "Pause Reporting",
+  "menuResumeReporting": "Resume Reporting",
+  "topicStateLabel": "State",
+  "topicAvailabilityLabel": "Availability",
+  "topicMediaLabel": "Now Playing",
+  "topicVolumeLabel": "Set volume",
+  "topicMuteLabel": "Set mute",
+  "topicRefreshLabel": "Refresh",
+  "previousTrack": "Previous",
+  "nextTrack": "Next",
+  "playAction": "Play",
+  "pauseAction": "Pause",
+  "mediaPlayerTitle": "Media Player in Home Assistant",
+  "mediaPlayerFooter": "Home Assistant's MQTT integration has no media player of its own. Either way, the player shows what plays and controls playback and volume on this Mac.",
+  "hacsPlayerTitle": "MQTT Media Player (HACS)",
+  "hacsPlayerBody": "Install it from HACS: the player appears on this device by itself.",
+  "openIntegration": "Open",
+  "universalPlayerTitle": "Universal media player (YAML)",
+  "universalPlayerBody": "Without HACS: paste the configuration into configuration.yaml, then restart Home Assistant.",
+  "copyYAML": "Copy YAML",
+  "copied": "Copied",
+  "@versionShort": {
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.1.0"
+      }
+    }
+  },
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.1.0"
+      }
+    }
+  },
+  "@errorReadConfig": {
+    "placeholders": {
+      "path": {
+        "type": "String",
+        "example": "/Users/me/Library/Application Support/Mac2MQTT/config.json"
+      },
+      "error": {
+        "type": "String",
+        "example": "decode config: unexpected end of JSON input"
+      }
+    }
+  },
+  "@idleSeconds": {
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "@idleMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "@idleHoursMinutes": {
+    "placeholders": {
+      "h": {
+        "type": "int",
+        "example": "2"
+      },
+      "m": {
+        "type": "int",
+        "example": "35"
+      }
+    }
+  },
+  "@entityCount": {
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
+  "@everySeconds": {
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "example": "30"
+      }
+    }
+  },
+  "@errorOpenAtLogin": {
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Operation not permitted"
+      }
+    }
+  }
+}
