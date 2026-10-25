@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
 	"github.com/egoist/mygo/ui"
 
 	"mac2mqtt/locales"
@@ -14,7 +15,12 @@ func (a *app) aboutPage(c *ui.Context, t *ui.Theme, p palette) {
 				ui.Image(c, appIcon).Size(88, 88)
 			}
 			ui.Text(c, locales.AppName()).FontSize(22).FontWeight(700)
-			ui.Text(c, locales.VersionLabel(a.version)).FontSize(12).TextColor(t.TextMuted)
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, locales.VersionLabel(a.version)).FontSize(12).TextColor(t.TextMuted)
+				ui.ButtonBase(c).Label(locales.CheckForUpdates()).TextColor(t.Accent).Children(func() {
+					ui.Text(c, locales.CheckForUpdates()).FontSize(12)
+				}).OnClick(updater.CheckForUpdates)
+			})
 			ui.Text(c, locales.AboutBody()).FontSize(13).TextColor(t.TextMuted).TextAlign(ui.Center).Wrap().MaxWidth(420)
 			ui.Row(c).Gap(8).Padding(6, 0, 0).Children(func() {
 				glassButton(c, iconHome, locales.HomeAssistantMQTT(), false).OnClick(func() {

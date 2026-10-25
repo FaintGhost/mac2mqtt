@@ -194,5 +194,14 @@
   "micInUse": "麦克风使用中",
   "cameraAndMicInUse": "摄像头和麦克风使用中",
   "notInUse": "未在使用",
-  "reportFailedHeadline": "已连接，但有一次上报未送达"
+  "reportFailedHeadline": "已连接，但有一次上报未送达",
+  "updatesTitle": "更新",
+  "automaticChecksLabel": "自动检查更新",
+  "automaticChecksHelp": "每天一次，以及启动后不久。",
+  "automaticDownloadsLabel": "自动下载并安装",
+  "automaticDownloadsHelp": "在后台安装更新，下次启动时生效。",
+  "checkForUpdates": "检查更新…",
+  "neverChecked": "尚未检查",
+  "lastChecked": "上次检查：{time}",
+  "updatesUnavailable": "此版本无法自动更新：请从 Release 的 DMG 安装 Mac2MQTT 到“应用程序”。"
 }

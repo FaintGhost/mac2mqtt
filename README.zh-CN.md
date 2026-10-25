@@ -64,6 +64,9 @@ xattr -dr com.apple.quarantine /Applications/Mac2MQTT.app
 2. 从菜单栏打开 Mac2MQTT，进入 **设置**，填写 Broker 的地址、端口和账号，保存。
 3. 设备会出现在 HA 的 **设置 → 设备与服务 → MQTT** 中。
 
+Mac2MQTT 会从 Release 自动更新：在后台检查新版本并显示更新说明，也可以在
+**设置 → 更新** 中允许自动下载安装；菜单中有 **检查更新…**。0.3.0 之前的版本不支持自动更新，需要手动安装一次 0.3.0。
+
 在设置中开启 **登录时打开**，重启后也会继续上报。如果 macOS 提示，请在
 **系统设置 → 通用 → 登录项** 中允许 Mac2MQTT。
 
@@ -135,8 +138,12 @@ go tool mygo i18n check       # 检查翻译目录
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
+请先在 `CHANGELOG.md` 中写好该版本的内容，它会作为 Release 说明和更新窗口中的更新内容。
+
 Release 工作流会检查 tag 与 `mygo.json` 是否一致，构建 arm64、amd64 和 universal
-三种 DMG，并连同 SHA-256 校验和一起发布。
+三种 DMG，签名更新包，并连同 SHA-256 校验和一起发布。更新包用 `go tool mygo keygen`
+生成的私钥签名，私钥保存在仓库的 `MYGO_UPDATER_PRIVATE_KEY` Secret 中；已安装的应用用
+`mygo.json` 里的公钥校验。私钥丢失后已安装的应用将无法再更新，请在密码管理器中备份。
 
 ## 限制
 

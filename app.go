@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
 	"github.com/egoist/mygo/ui"
 
 	"mac2mqtt/internal/config"
@@ -58,6 +59,11 @@ type app struct {
 	loginError         string
 	trayPhase          service.Phase
 	copiedYAML         bool
+
+	// The updater's preferences, as the Settings switches show them.
+	autoUpdateChecks    bool
+	autoUpdateDownloads bool
+	lastUpdateCheck     time.Time
 
 	collector  *system.Collector
 	controller *system.Controller
@@ -111,6 +117,12 @@ func (a *app) ready() {
 	a.controller = system.NewController()
 
 	a.readOpenAtLogin()
+	a.readUpdatePrefs()
+	updater.OnChange(func() {
+		if a.win != nil {
+			a.win.Update(a.readUpdatePrefs)
+		}
+	})
 	a.createWindow()
 	a.createTray()
 	a.updateTray()
@@ -281,6 +293,7 @@ func (a *app) trayMenu() *mygo.Menu {
 			}
 		}},
 		&mygo.MenuItem{Label: locales.MenuSettings(), Click: func(*mygo.MenuItem, *mygo.Window) { a.showSettings() }},
+		updater.MenuItem(),
 		mygo.Separator(),
 		&mygo.MenuItem{Role: mygo.RoleQuit, Label: locales.QuitApp()},
 	)
@@ -332,6 +345,7 @@ func (a *app) installMenu() {
 			{Label: locales.MenuReconnect(), Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
 			mygo.Separator(),
 			{Label: locales.MenuSettings(), Accelerator: "CmdOrCtrl+,", Click: func(*mygo.MenuItem, *mygo.Window) { a.showSettings() }},
+			updater.MenuItem(),
 		}},
 		{Role: mygo.RoleWindowMenu},
 	}))
@@ -392,6 +406,13 @@ func (a *app) toggleWindow() {
 	} else {
 		a.showWindow()
 	}
+}
+
+// readUpdatePrefs reads the updater's preferences for the Settings page.
+func (a *app) readUpdatePrefs() {
+	a.autoUpdateChecks = updater.AutomaticChecks()
+	a.autoUpdateDownloads = updater.AutomaticDownloads()
+	a.lastUpdateCheck = updater.LastCheck()
 }
 
 // notify shows a notification from Home Assistant.

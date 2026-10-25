@@ -170,8 +170,10 @@ func (a *app) sidebarStatus(c *ui.Context, t *ui.Theme, p palette) {
 func (a *app) page(c *ui.Context, t *ui.Theme, p palette, title string, bottomRoom float32, actions func(), content func()) {
 	ui.Scroll(c).Fill().Padding(headerHeight+6, 24, 24+bottomRoom, 16).Gap(20).ScrollbarInsets(headerHeight, 2, bottomRoom, 0).
 		Children(content)
-	ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(headerHeight + 10).PassThrough().
-		Material(glass.ScrollEdge{Background: p.canvas})
+	// A hard edge: content that scrolls under the title frosts behind it,
+	// as under a toolbar, rather than showing through a soft fade.
+	ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(headerHeight).PassThrough().
+		Material(glass.ScrollEdge{Hard: true, Background: p.canvas})
 	ui.Row(c).Absolute().Top(0).Left(0).Right(0).Height(headerHeight).Padding(0, 20, 0, 16).Gap(8).AlignItems(ui.Center).
 		DragWindow().Children(func() {
 		ui.Text(c, title).FontSize(20).FontWeight(700).Grow(1).SingleLine()

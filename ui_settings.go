@@ -5,6 +5,7 @@ import (
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/glass"
+	"github.com/egoist/mygo/plugins/updater"
 	"github.com/egoist/mygo/ui"
 
 	"mac2mqtt/internal/config"
@@ -33,6 +34,7 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 				})
 			}
 		})
+		a.updatesSection(c, t, p)
 		section(c, t, p, locales.MqttConnectionTitle(), locales.MqttConnectionDescription(), func() {
 			row(c, t, locales.ReportingLabel(), locales.ReportingHelp(), func() {
 				ui.Switch(c, &a.draft.Reporting.Enabled).Label(locales.ReportingLabel())
@@ -100,6 +102,33 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 	if bottom > 0 {
 		a.saveBar(c, t, dirty)
 	}
+}
+
+// updatesSection shows the updater's preferences, and checks on demand.
+func (a *app) updatesSection(c *ui.Context, t *ui.Theme, p palette) {
+	footer := ""
+	if !mygo.Updater.Enabled() {
+		footer = locales.UpdatesUnavailable()
+	}
+	section(c, t, p, locales.UpdatesTitle(), footer, func() {
+		row(c, t, locales.AutomaticChecksLabel(), locales.AutomaticChecksHelp(), func() {
+			if ui.Switch(c, &a.autoUpdateChecks).Label(locales.AutomaticChecksLabel()).Changed() {
+				updater.SetAutomaticChecks(a.autoUpdateChecks)
+			}
+		})
+		row(c, t, locales.AutomaticDownloadsLabel(), locales.AutomaticDownloadsHelp(), func() {
+			if ui.Switch(c, &a.autoUpdateDownloads).Label(locales.AutomaticDownloadsLabel()).Changed() {
+				updater.SetAutomaticDownloads(a.autoUpdateDownloads)
+			}
+		})
+		last := locales.NeverChecked()
+		if !a.lastUpdateCheck.IsZero() {
+			last = locales.LastChecked(a.lastUpdateCheck.Local().Format("2006-01-02 15:04"))
+		}
+		row(c, t, locales.VersionLabel(a.version), last, func() {
+			ui.Button(c, locales.CheckForUpdates()).OnClick(updater.CheckForUpdates)
+		})
+	})
 }
 
 // saveBar floats on glass at the bottom while settings have unsaved

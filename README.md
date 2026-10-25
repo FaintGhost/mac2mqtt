@@ -80,6 +80,11 @@ xattr -dr com.apple.quarantine /Applications/Mac2MQTT.app
 3. The device appears in Home Assistant under **Settings → Devices &
    services → MQTT**.
 
+Mac2MQTT updates itself from these releases: it checks in the background and
+offers new versions with their notes, or installs them by itself if you let
+it in **Settings → Updates**; **Check for Updates…** is in the menus.
+Versions before 0.3.0 cannot update themselves: install 0.3.0 once by hand.
+
 Turn on **Open at Login** in Settings to keep reporting after a restart. If
 macOS asks, allow Mac2MQTT in **System Settings → General → Login Items**.
 
@@ -287,9 +292,16 @@ Set `version` in `mygo.json`, commit, and push a matching tag:
 git tag v0.2.0 && git push origin v0.2.0
 ```
 
+Add the version's section to `CHANGELOG.md` first: it is the release's notes,
+which the update window shows.
+
 The release workflow checks that the tag and `mygo.json` agree, builds the
-arm64, amd64 and universal disk images, and publishes them with their
-SHA-256 checksums.
+arm64, amd64 and universal disk images, signs the updates, and publishes
+them with their SHA-256 checksums. Updates are signed with the secret key
+that `go tool mygo keygen` made, kept in the repository's
+`MYGO_UPDATER_PRIVATE_KEY` secret; installed apps check them against the
+public key in `mygo.json`. Losing the secret key strands installed apps on
+their version: keep a copy in a password manager.
 
 ## Limitations
 

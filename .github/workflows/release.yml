@@ -30,7 +30,21 @@ jobs:
 
       - run: go test ./...
 
-      - name: Build the disk images
+      # Installed apps take only updates signed with this key: a release
+      # without its manifests is one they cannot update to.
+      - name: Check the update signing key
+        env:
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+        run: |
+          if [ -z "$MYGO_UPDATER_PRIVATE_KEY" ]; then
+            echo "::error::the MYGO_UPDATER_PRIVATE_KEY secret is not set"
+            exit 1
+          fi
+
+      - name: Build the disk images and the updates
+        env:
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: go tool mygo build -platform darwin/arm64,darwin/amd64,darwin/universal -o dist
 
       - name: Name the disk images
@@ -41,15 +55,21 @@ jobs:
           mv "dist/darwin-arm64/Mac2MQTT $VERSION arm64.dmg" "release/Mac2MQTT-$VERSION-arm64.dmg"
           mv "dist/darwin-amd64/Mac2MQTT $VERSION amd64.dmg" "release/Mac2MQTT-$VERSION-amd64.dmg"
           mv "dist/darwin-universal/Mac2MQTT $VERSION.dmg" "release/Mac2MQTT-$VERSION-universal.dmg"
-          cd release && shasum -a 256 *.dmg > SHA256SUMS.txt && cat SHA256SUMS.txt
+          # The updates keep the names their manifests point to.
+          cp dist/darwin-*/*.tar.gz dist/darwin-*/update-darwin-*.json release/
+          cp dist/darwin-*/*.delta release/ 2>/dev/null || true
+          cd release && shasum -a 256 *.dmg *.tar.gz > SHA256SUMS.txt && cat SHA256SUMS.txt && ls -la
 
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
+          # The version's section of CHANGELOG.md, as the update window shows it.
+          awk -v v="## $VERSION" '$0 == v {on=1; next} /^## / {on=0} on' CHANGELOG.md > notes.md
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" release/* --clobber
           else
             gh release create "$GITHUB_REF_NAME" release/* --verify-tag \
-              --title "Mac2MQTT $GITHUB_REF_NAME" --generate-notes
+              --title "Mac2MQTT $GITHUB_REF_NAME" --notes-file notes.md
           fi

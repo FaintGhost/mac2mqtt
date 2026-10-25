@@ -195,6 +195,15 @@
   "cameraAndMicInUse": "Camera and mic in use",
   "notInUse": "Not in use",
   "reportFailedHeadline": "Connected, but a report didn't get through",
+  "updatesTitle": "Updates",
+  "automaticChecksLabel": "Check for updates automatically",
+  "automaticChecksHelp": "Once a day, and shortly after launch.",
+  "automaticDownloadsLabel": "Download and install automatically",
+  "automaticDownloadsHelp": "Installs updates in the background; they take effect at the next launch.",
+  "checkForUpdates": "Check for Updates…",
+  "neverChecked": "Not checked yet",
+  "lastChecked": "Last checked {time}",
+  "updatesUnavailable": "This build can't update itself: install Mac2MQTT from a release disk image into Applications.",
   "@versionShort": {
     "placeholders": {
       "version": {
@@ -272,6 +281,14 @@
       "error": {
         "type": "String",
         "example": "Operation not permitted"
+      }
+    }
+  },
+  "@lastChecked": {
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "2026-10-25 20:50"
       }
     }
   }

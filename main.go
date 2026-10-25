@@ -6,12 +6,16 @@ import (
 	"log"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater/native"
 
 	"mac2mqtt/locales"
 )
 
 func main() {
 	a := newApp()
+	// Updates from the GitHub releases, in the update window that Mac
+	// users know from Sparkle, drawn in native UI.
+	mygo.Use(native.Plugin)
 	mygo.App.SetName(locales.AppName())
 	mygo.App.SetVersion(a.version)
 	// A menu-bar utility: no Dock icon, no app switcher entry.

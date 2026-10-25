@@ -1989,3 +1989,93 @@ func ReportFailedHeadline() string { return In(i18n.Locale()).ReportFailedHeadli
 func (msgs Messages) ReportFailedHeadline() string {
 	return Catalog.Format(msgs.locale, "reportFailedHeadline", nil)
 }
+
+// UpdatesTitle says "Updates"
+// in the language the app shows.
+func UpdatesTitle() string { return In(i18n.Locale()).UpdatesTitle() }
+
+// UpdatesTitle says "Updates"
+// in the language of msgs.
+func (msgs Messages) UpdatesTitle() string {
+	return Catalog.Format(msgs.locale, "updatesTitle", nil)
+}
+
+// AutomaticChecksLabel says "Check for updates automatically"
+// in the language the app shows.
+func AutomaticChecksLabel() string { return In(i18n.Locale()).AutomaticChecksLabel() }
+
+// AutomaticChecksLabel says "Check for updates automatically"
+// in the language of msgs.
+func (msgs Messages) AutomaticChecksLabel() string {
+	return Catalog.Format(msgs.locale, "automaticChecksLabel", nil)
+}
+
+// AutomaticChecksHelp says "Once a day, and shortly after launch."
+// in the language the app shows.
+func AutomaticChecksHelp() string { return In(i18n.Locale()).AutomaticChecksHelp() }
+
+// AutomaticChecksHelp says "Once a day, and shortly after launch."
+// in the language of msgs.
+func (msgs Messages) AutomaticChecksHelp() string {
+	return Catalog.Format(msgs.locale, "automaticChecksHelp", nil)
+}
+
+// AutomaticDownloadsLabel says "Download and install automatically"
+// in the language the app shows.
+func AutomaticDownloadsLabel() string { return In(i18n.Locale()).AutomaticDownloadsLabel() }
+
+// AutomaticDownloadsLabel says "Download and install automatically"
+// in the language of msgs.
+func (msgs Messages) AutomaticDownloadsLabel() string {
+	return Catalog.Format(msgs.locale, "automaticDownloadsLabel", nil)
+}
+
+// AutomaticDownloadsHelp says "Installs updates in the background; they take effect at the next launch."
+// in the language the app shows.
+func AutomaticDownloadsHelp() string { return In(i18n.Locale()).AutomaticDownloadsHelp() }
+
+// AutomaticDownloadsHelp says "Installs updates in the background; they take effect at the next launch."
+// in the language of msgs.
+func (msgs Messages) AutomaticDownloadsHelp() string {
+	return Catalog.Format(msgs.locale, "automaticDownloadsHelp", nil)
+}
+
+// CheckForUpdates says "Check for Updates…"
+// in the language the app shows.
+func CheckForUpdates() string { return In(i18n.Locale()).CheckForUpdates() }
+
+// CheckForUpdates says "Check for Updates…"
+// in the language of msgs.
+func (msgs Messages) CheckForUpdates() string {
+	return Catalog.Format(msgs.locale, "checkForUpdates", nil)
+}
+
+// NeverChecked says "Not checked yet"
+// in the language the app shows.
+func NeverChecked() string { return In(i18n.Locale()).NeverChecked() }
+
+// NeverChecked says "Not checked yet"
+// in the language of msgs.
+func (msgs Messages) NeverChecked() string {
+	return Catalog.Format(msgs.locale, "neverChecked", nil)
+}
+
+// LastChecked says "Last checked {time}"
+// in the language the app shows.
+func LastChecked(time_ string) string { return In(i18n.Locale()).LastChecked(time_) }
+
+// LastChecked says "Last checked {time}"
+// in the language of msgs.
+func (msgs Messages) LastChecked(time_ string) string {
+	return Catalog.Format(msgs.locale, "lastChecked", map[string]any{"time": time_})
+}
+
+// UpdatesUnavailable says "This build can't update itself: install Mac2MQTT from a release disk image into Applications."
+// in the language the app shows.
+func UpdatesUnavailable() string { return In(i18n.Locale()).UpdatesUnavailable() }
+
+// UpdatesUnavailable says "This build can't update itself: install Mac2MQTT from a release disk image into Applications."
+// in the language of msgs.
+func (msgs Messages) UpdatesUnavailable() string {
+	return Catalog.Format(msgs.locale, "updatesUnavailable", nil)
+}
