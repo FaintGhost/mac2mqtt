@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- A flat icon: a house in one white line on ink, with a signal inside.
+- A new website, as flat: faintghost.github.io/mac2mqtt.
+
 ## 0.3.3
 
 - A new icon: a house broadcasting, for a Mac reporting to its home.

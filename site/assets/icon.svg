@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Flat: an ink body, as macOS's icon grid places it, with a faint rim
+       that keeps it apart from a dark Dock. -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="#111418"/>
+  <rect x="101" y="101" width="822" height="822" rx="185" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+  <!-- A house in one white line: the home. -->
+  <path d="M512 300 L736 486 L736 740 L288 740 L288 486 Z" fill="none" stroke="#ffffff" stroke-width="48" stroke-linejoin="round"/>
+  <!-- A signal inside, in the accent: MQTT's messages. -->
+  <circle cx="512" cy="636" r="30" fill="#2dd4bf"/>
+  <path d="M440 572 A102 102 0 0 1 584 572" fill="none" stroke="#2dd4bf" stroke-width="42" stroke-linecap="round"/>
+</svg>

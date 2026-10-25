@@ -1,53 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
-      <stop offset="0" stop-color="#3cebd9"/>
-      <stop offset="0.5" stop-color="#11a7a5"/>
-      <stop offset="1" stop-color="#0a5468"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.28" cy="0.08" r="0.8">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"/>
-      <stop offset="0.6" stop-color="#ffffff" stop-opacity="0.04"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
-      <stop offset="0.25" stop-color="#ffffff" stop-opacity="0"/>
-      <stop offset="0.8" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.25"/>
-    </linearGradient>
-    <linearGradient id="house" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#dcf7f4"/>
-    </linearGradient>
-    <linearGradient id="signal" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#12b8ae"/>
-      <stop offset="1" stop-color="#0a6377"/>
-    </linearGradient>
-    <clipPath id="body"><rect x="100" y="100" width="824" height="824" rx="186"/></clipPath>
-  </defs>
-  <!-- A soft shadow, as macOS's icon grid leaves room for. -->
-  <rect x="91" y="123" width="842" height="824" rx="195" fill="#06232b" opacity="0.028"/>
-  <rect x="92" y="121" width="840" height="824" rx="194" fill="#06232b" opacity="0.028"/>
-  <rect x="93" y="118" width="838" height="824" rx="193" fill="#06232b" opacity="0.028"/>
-  <rect x="94" y="116" width="836" height="824" rx="192" fill="#06232b" opacity="0.028"/>
-  <rect x="95" y="113" width="834" height="824" rx="191" fill="#06232b" opacity="0.028"/>
-  <rect x="96" y="110" width="832" height="824" rx="190" fill="#06232b" opacity="0.028"/>
-  <rect x="97" y="108" width="830" height="824" rx="189" fill="#06232b" opacity="0.028"/>
-  <rect x="98" y="105" width="828" height="824" rx="188" fill="#06232b" opacity="0.028"/>
-  <rect x="99" y="103" width="826" height="824" rx="187" fill="#06232b" opacity="0.028"/>
-  <rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
-  <g clip-path="url(#body)">
-    <rect x="100" y="100" width="824" height="824" fill="url(#glow)"/>
-  </g>
-  <!-- A hairline rim: light along the top, shade along the bottom. -->
-  <rect x="102" y="102" width="820" height="820" rx="184" fill="none" stroke="url(#rim)" stroke-width="4"/>
-  <!-- A house, over a soft shadow. -->
-  <path d="M512 318 L752 516 L700 516 L700 744 L324 744 L324 516 L272 516 Z" fill="#042f3a" opacity="0.10" stroke="#042f3a" stroke-opacity="0.10" stroke-width="64" stroke-linejoin="round" transform="translate(0 30)"/>
-  <path d="M512 318 L752 516 L700 516 L700 744 L324 744 L324 516 L272 516 Z" fill="#042f3a" opacity="0.14" stroke="#042f3a" stroke-opacity="0.14" stroke-width="48" stroke-linejoin="round" transform="translate(0 18)"/>
-  <path d="M512 318 L752 516 L700 516 L700 744 L324 744 L324 516 L272 516 Z" fill="url(#house)" stroke="url(#house)" stroke-width="44" stroke-linejoin="round"/>
-  <!-- A broadcast inside: a node and two waves, MQTT's messages. -->
-  <circle cx="512" cy="652" r="34" fill="url(#signal)"/>
-  <path d="M446 586 A94 94 0 0 1 578 586" fill="none" stroke="url(#signal)" stroke-width="36" stroke-linecap="round"/>
-  <path d="M390 530 A172 172 0 0 1 634 530" fill="none" stroke="url(#signal)" stroke-width="36" stroke-linecap="round"/>
+  <!-- Flat: an ink body, as macOS's icon grid places it, with a faint rim
+       that keeps it apart from a dark Dock. -->
+  <rect x="100" y="100" width="824" height="824" rx="186" fill="#111418"/>
+  <rect x="101" y="101" width="822" height="822" rx="185" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+  <!-- A house in one white line: the home. -->
+  <path d="M512 300 L736 486 L736 740 L288 740 L288 486 Z" fill="none" stroke="#ffffff" stroke-width="48" stroke-linejoin="round"/>
+  <!-- A signal inside, in the accent: MQTT's messages. -->
+  <circle cx="512" cy="636" r="30" fill="#2dd4bf"/>
+  <path d="M440 572 A102 102 0 0 1 584 572" fill="none" stroke="#2dd4bf" stroke-width="42" stroke-linecap="round"/>
 </svg>
