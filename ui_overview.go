@@ -321,18 +321,10 @@ func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 
 	ui.Column(c).FillWidth().Gap(6).Children(func() {
 		ui.Text(c, locales.ThisMac()).FontSize(12).FontWeight(600).TextColor(t.TextMuted).Padding(0, 12)
-		// Two to a row; a last one alone keeps a tile's width.
-		ui.Column(c).FillWidth().Gap(12).Children(func() {
-			for i := 0; i < len(tiles); i += 2 {
-				c.Key(i)
-				ui.Row(c).Gap(12).Children(func() {
-					for _, spec := range tiles[i:min(i+2, len(tiles))] {
-						tile(c, t, p, spec.glyph, spec.tint, spec.label, spec.value, spec.detail)
-					}
-					if i+1 == len(tiles) {
-						ui.Box(c).Grow(1).Basis(0)
-					}
-				})
+		// Two equal columns: a last tile alone keeps a column's width.
+		ui.Grid(c).Columns(2).Gap(12).FillWidth().Children(func() {
+			for _, spec := range tiles {
+				tile(c, t, p, spec.glyph, spec.tint, spec.label, spec.value, spec.detail)
 			}
 		})
 	})
@@ -356,7 +348,9 @@ func (a *app) activityLabel() string {
 }
 
 func tile(c *ui.Context, t *ui.Theme, p palette, glyph *ui.SVG, tint ui.Color, label, value, detail string) {
-	group(c, p).Grow(1).Basis(0).MinWidth(0).Padding(14).Gap(10).Children(func() {
+	// Sized by its grid cell, which it fills; MinWidth lets text shorten
+	// rather than widen the column.
+	card(c, p).MinWidth(0).Padding(14).Gap(10).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 			badge(c, glyph, tint, 26, false)
 			ui.Text(c, label).FontSize(12).TextColor(t.TextMuted)

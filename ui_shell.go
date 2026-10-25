@@ -223,9 +223,14 @@ func section(c *ui.Context, t *ui.Theme, p palette, title, footer string, rows f
 	})
 }
 
-// group is the rounded face that rows, tiles and cards sit on.
+// group is the rounded face that rows and cards sit on, across the page.
 func group(c *ui.Context, p palette) ui.Element {
-	return ui.Column(c).FillWidth().Radius(12).Background(p.group).Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, 0.04))
+	return card(c, p).FillWidth()
+}
+
+// card is the rounded face alone, sized by its parent, as a grid's cell.
+func card(c *ui.Context, p palette) ui.Element {
+	return ui.Column(c).Radius(12).Background(p.group).Shadow(0, 1, 2, 0, ui.RGBA(0, 0, 0, 0.04))
 }
 
 // row is a row of a section: a title, perhaps a line under it, and a

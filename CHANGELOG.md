@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1
+
+- The tiles of This Mac share two equal columns: a last tile alone on its
+  row, such as Display, was wider than the others.
+
 ## 0.3.0
 
 - Mac2MQTT updates itself: it checks for new versions in the background and
