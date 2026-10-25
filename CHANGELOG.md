@@ -5,8 +5,8 @@
 - Mac2MQTT updates itself: it checks for new versions in the background and
   offers to install them, with **Check for Updates…** in the menus and the
   choice to update automatically in Settings.
-- Content scrolling under a page's title now frosts behind it, rather than
-  showing through.
+- A page's title sits on the window with nothing behind it; content that
+  scrolls under it blurs and fades out, with no edge.
 
 ## 0.2.2
 
