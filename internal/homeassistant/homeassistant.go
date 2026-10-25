@@ -244,8 +244,10 @@ func AllEntities(opts Options) []Entity {
 			"icon":                  "mdi:music",
 		}),
 		commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_play_pause", "Play/Pause", "PLAY_PAUSE", "mdi:play-pause"),
-		commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_next", "Next Track", "NEXT", "mdi:skip-next"),
-		commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_previous", "Previous Track", "PREVIOUS", "mdi:skip-previous"),
+		availableWhen(commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_next", "Next Track", "NEXT", "mdi:skip-next"),
+			availabilityTopic, joinTopic(base, "media/next/available")),
+		availableWhen(commandButton(opts, availabilityTopic, base, GroupMedia, "media/command", "media_previous", "Previous Track", "PREVIOUS", "mdi:skip-previous"),
+			availabilityTopic, joinTopic(base, "media/previous/available")),
 		mediaPlayer(opts, availabilityTopic, base),
 		{
 			Component: "notify",
@@ -318,6 +320,21 @@ func commandButton(opts Options, availabilityTopic, base, group, topic, objectID
 			"icon":          icon,
 		}),
 	}
+}
+
+// availableWhen makes an entity available only while the Mac is and
+// another topic says online too, as the next track button while the
+// player has a next track.
+func availableWhen(e Entity, availabilityTopic, topic string) Entity {
+	delete(e.Config, "availability_topic")
+	delete(e.Config, "payload_available")
+	delete(e.Config, "payload_not_available")
+	e.Config["availability"] = []map[string]any{
+		{"topic": availabilityTopic, "payload_available": payloadAvailable, "payload_not_available": payloadUnavailable},
+		{"topic": topic, "payload_available": payloadAvailable, "payload_not_available": payloadUnavailable},
+	}
+	e.Config["availability_mode"] = "all"
+	return e
 }
 
 // MediaPlayerObjectID names the media player in unique IDs; its discovery

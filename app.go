@@ -680,7 +680,7 @@ func cleanupTopics(old, next config.Config) []string {
 		if old.Reporting.Retain {
 			base := strings.TrimRight(old.HomeAssistant.BaseTopic, "/")
 			topics = append(topics, old.StateTopic(), base+"/media/state", base+"/media/attributes")
-			for _, field := range []string{"title", "artist", "album", "duration", "position", "volume", "mute", "mediatype"} {
+			for _, field := range []string{"title", "artist", "album", "duration", "position", "volume", "mute", "mediatype", "next/available", "previous/available"} {
 				topics = append(topics, base+"/media/"+field)
 			}
 		}

@@ -39,6 +39,14 @@ function run() {
     out.bundle_id = ObjC.unwrap(path.client.bundleIdentifier) || '';
     out.app = ObjC.unwrap(path.client.displayName) || '';
   }
+  if (R.respondsToSelector('localSupportedCommands')) {
+    const commands = R.localSupportedCommands;
+    out.commands = [];
+    for (let i = 0; i < commands.count; i++) {
+      const c = commands.objectAtIndex(i);
+      if (!c.respondsToSelector('isEnabled') || c.isEnabled) out.commands.push(c.command);
+    }
+  }
   return JSON.stringify(out);
 }`
 
@@ -53,7 +61,16 @@ type nowPlayingOutput struct {
 	Playing  bool    `json:"playing"`
 	BundleID string  `json:"bundle_id"`
 	App      string  `json:"app"`
+	// Commands are the MediaRemote commands the player takes, nil when
+	// macOS does not tell.
+	Commands []int `json:"commands"`
 }
+
+// MediaRemote's commands for the next and previous track.
+const (
+	commandNextTrack     = 4
+	commandPreviousTrack = 5
+)
 
 // readMedia asks MediaRemote, through osascript, for the Now Playing item.
 func readMedia(ctx context.Context, runner commandRunner) *MediaInfo {
@@ -92,6 +109,17 @@ func parseNowPlaying(output []byte) *MediaInfo {
 	}
 	if out.Playing || out.Rate > 0 {
 		media.State = "playing"
+	}
+	// A player takes next and previous only when it has them, as a video
+	// without a playlist does not. When macOS does not say, try them.
+	media.CanNext, media.CanPrevious = out.Commands == nil, out.Commands == nil
+	for _, c := range out.Commands {
+		switch c {
+		case commandNextTrack:
+			media.CanNext = true
+		case commandPreviousTrack:
+			media.CanPrevious = true
+		}
 	}
 	return media
 }

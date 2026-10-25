@@ -678,6 +678,7 @@ func (m *Manager) publishMedia(ctx context.Context, client broker.Client, media 
 	base := m.opts.Config.HomeAssistant.BaseTopic + "/media/"
 	fields := map[string]string{
 		"title": "", "artist": "", "album": "", "duration": "0", "position": "0", "mediatype": "music",
+		"next/available": "offline", "previous/available": "offline",
 	}
 	if media != nil {
 		if media.State != "" {
@@ -711,6 +712,12 @@ func (m *Manager) publishMedia(ctx context.Context, client broker.Client, media 
 		fields["position"] = strconv.Itoa(int(media.PositionSeconds))
 		if isVideoApp(media.AppName) {
 			fields["mediatype"] = "video"
+		}
+		if media.CanNext {
+			fields["next/available"] = "online"
+		}
+		if media.CanPrevious {
+			fields["previous/available"] = "online"
 		}
 	}
 	m.publishMu.Lock()
@@ -750,7 +757,7 @@ func (m *Manager) publishMedia(ctx context.Context, client broker.Client, media 
 }
 
 // mediaFields are the media player's one-field topics, in publishing order.
-var mediaFields = []string{"title", "artist", "album", "duration", "position", "volume", "mute", "mediatype"}
+var mediaFields = []string{"title", "artist", "album", "duration", "position", "volume", "mute", "mediatype", "next/available", "previous/available"}
 
 // isVideoApp reports whether what an app plays is most likely video, for
 // the media player's media type.
@@ -769,7 +776,8 @@ func sameMedia(a, b *system.MediaInfo) bool {
 	// A live stream's duration grows as it plays: that alone is no change
 	// worth a publish every few seconds.
 	return a.State == b.State && a.Title == b.Title && a.Artist == b.Artist &&
-		a.Album == b.Album && a.AppName == b.AppName && math.Abs(a.DurationSeconds-b.DurationSeconds) < 5
+		a.Album == b.Album && a.AppName == b.AppName && math.Abs(a.DurationSeconds-b.DurationSeconds) < 5 &&
+		a.CanNext == b.CanNext && a.CanPrevious == b.CanPrevious
 }
 
 func (m *Manager) publishState(ctx context.Context, client broker.Client) error {

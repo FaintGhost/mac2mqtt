@@ -2099,3 +2099,13 @@ func MetricMicrophone() string { return In(i18n.Locale()).MetricMicrophone() }
 func (msgs Messages) MetricMicrophone() string {
 	return Catalog.Format(msgs.locale, "metricMicrophone", nil)
 }
+
+// NotOfferedByPlayer says "What plays doesn't offer this, as a video without a playlist"
+// in the language the app shows.
+func NotOfferedByPlayer() string { return In(i18n.Locale()).NotOfferedByPlayer() }
+
+// NotOfferedByPlayer says "What plays doesn't offer this, as a video without a playlist"
+// in the language of msgs.
+func (msgs Messages) NotOfferedByPlayer() string {
+	return Catalog.Format(msgs.locale, "notOfferedByPlayer", nil)
+}

@@ -60,6 +60,9 @@ func TestSystemEntitiesHaveStableUniqueTopics(t *testing.T) {
 		if err := json.Unmarshal(payload, &decoded); err != nil {
 			t.Errorf("%s JSON invalid: %v", entity.ObjectID, err)
 		}
+		if decoded["availability"] != nil {
+			continue // checked by TestNextTrackAvailability
+		}
 		if decoded["availability_topic"] != "mac2mqtt/studio/availability" {
 			t.Errorf("%s availability = %v", entity.ObjectID, decoded["availability_topic"])
 		}
@@ -265,5 +268,17 @@ func TestNoCameraOrMicrophoneNoActivityEntities(t *testing.T) {
 	}
 	if !mic {
 		t.Error("a Mac with a microphone lacks microphone_in_use")
+	}
+}
+
+func TestNextTrackAvailability(t *testing.T) {
+	for _, entity := range SystemEntities(testOptions()) {
+		if entity.ObjectID != "media_next" && entity.ObjectID != "media_previous" {
+			continue
+		}
+		list, _ := entity.Config["availability"].([]map[string]any)
+		if len(list) != 2 || list[0]["topic"] != "mac2mqtt/studio/availability" || entity.Config["availability_mode"] != "all" || entity.Config["availability_topic"] != nil {
+			t.Errorf("%s availability = %+v", entity.ObjectID, entity.Config)
+		}
 	}
 }

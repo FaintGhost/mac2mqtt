@@ -54,6 +54,10 @@ type MediaInfo struct {
 	DurationSeconds float64 `json:"duration_seconds,omitempty"`
 	PositionSeconds float64 `json:"position_seconds,omitempty"`
 	PlaybackRate    float64 `json:"playback_rate,omitempty"`
+	// CanNext and CanPrevious tell whether the player takes the next and
+	// previous track commands.
+	CanNext     bool `json:"can_next"`
+	CanPrevious bool `json:"can_previous"`
 }
 
 // ActivityInfo tells whether an app uses a camera or a microphone.

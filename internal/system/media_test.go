@@ -11,7 +11,7 @@ func TestParseNowPlaying(t *testing.T) {
 	if media == nil {
 		t.Fatal("media = nil")
 	}
-	want := MediaInfo{State: "playing", Title: "Song", Artist: "Artist", AppName: "Google Chrome", DurationSeconds: 200.5, PositionSeconds: 12.25, PlaybackRate: 1}
+	want := MediaInfo{State: "playing", Title: "Song", Artist: "Artist", AppName: "Google Chrome", DurationSeconds: 200.5, PositionSeconds: 12.25, PlaybackRate: 1, CanNext: true, CanPrevious: true}
 	if *media != want {
 		t.Fatalf("media = %+v, want %+v", *media, want)
 	}
@@ -50,5 +50,17 @@ func TestReadMediaRunsJXA(t *testing.T) {
 	runner.runFn = func(context.Context, string, ...string) ([]byte, error) { return nil, errors.New("boom") }
 	if media := readMedia(context.Background(), runner); media != nil {
 		t.Fatalf("media after error = %+v", media)
+	}
+}
+
+func TestParseNowPlayingSupportedCommands(t *testing.T) {
+	// A video without a playlist: play, pause, toggle, stop and seek.
+	media := parseNowPlaying([]byte(`{"title":"Video","playing":true,"commands":[24,3,2,1,0]}`))
+	if media.CanNext || media.CanPrevious {
+		t.Errorf("media = %+v, want neither next nor previous", media)
+	}
+	media = parseNowPlaying([]byte(`{"title":"Album","playing":true,"commands":[0,1,2,4,5]}`))
+	if !media.CanNext || !media.CanPrevious {
+		t.Errorf("media = %+v, want next and previous", media)
 	}
 }

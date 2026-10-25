@@ -206,6 +206,7 @@
   "updatesUnavailable": "This build can't update itself: install Mac2MQTT from a release disk image into Applications.",
   "metricCamera": "Camera",
   "metricMicrophone": "Microphone",
+  "notOfferedByPlayer": "What plays doesn't offer this, as a video without a playlist",
   "@versionShort": {
     "placeholders": {
       "version": {

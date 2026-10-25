@@ -5,6 +5,9 @@
 - Mac2MQTT updates itself: it checks for new versions in the background and
   offers to install them, with **Check for Updates…** in the menus and the
   choice to update automatically in Settings.
+- Next and previous show as unavailable, in the window and in Home
+  Assistant, while what plays does not offer them, as a video without a
+  playlist: they used to do nothing.
 - Camera In Use and Microphone In Use are published only when the Mac has
   a camera or a microphone, built in or plugged in: a Mac mini without them
   has neither entity, and connecting one adds it at once.

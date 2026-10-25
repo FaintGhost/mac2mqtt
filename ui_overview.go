@@ -152,7 +152,7 @@ func (a *app) nowPlayingCard(c *ui.Context, t *ui.Theme, p palette) {
 				if !published {
 					ui.Button(c, locales.ChooseEntities()).OnClick(func() { a.tab = tabEntities })
 				} else if media != nil {
-					a.mediaControls(c, t, p, media.State == "playing")
+					a.mediaControls(c, t, p, media)
 				}
 			})
 		})
@@ -204,17 +204,23 @@ func (a *app) mediaDetails(c *ui.Context, t *ui.Theme, p palette, media *system.
 
 // mediaControls are the previous, play or pause, and next buttons, as
 // Control Center shows them.
-func (a *app) mediaControls(c *ui.Context, t *ui.Theme, p palette, playing bool) {
-	button := func(glyph *ui.SVG, label string, main bool, command system.MediaCommand) {
+func (a *app) mediaControls(c *ui.Context, t *ui.Theme, p palette, media *system.MediaInfo) {
+	button := func(glyph *ui.SVG, label string, main, enabled bool, command system.MediaCommand) {
 		c.Key(label)
 		size := float32(30)
 		if main {
 			size = 38
 		}
-		b := ui.ButtonBase(c).Size(size, size).Radius(size / 2).Center().Label(label).Tooltip(label)
+		tip := label
+		if !enabled {
+			tip = locales.NotOfferedByPlayer()
+		}
+		b := ui.ButtonBase(c).Size(size, size).Radius(size / 2).Center().Label(label).Tooltip(tip).Disabled(!enabled)
 		switch {
 		case main:
 			b.Background(t.Accent).TextColor(t.AccentText)
+		case !enabled:
+			b.TextColor(t.TextMuted).Opacity(0.4)
 		case b.Hovered():
 			b.Background(p.fill).TextColor(t.Text)
 		default:
@@ -224,13 +230,13 @@ func (a *app) mediaControls(c *ui.Context, t *ui.Theme, p palette, playing bool)
 		b.OnClick(func() { a.mediaControl(command) })
 	}
 	ui.Row(c).Gap(6).AlignItems(ui.Center).Shrink(0).Children(func() {
-		button(iconBackFilled, locales.PreviousTrack(), false, system.MediaPrevious)
-		if playing {
-			button(iconPauseFilled, locales.PauseAction(), true, system.MediaPause)
+		button(iconBackFilled, locales.PreviousTrack(), false, media.CanPrevious, system.MediaPrevious)
+		if media.State == "playing" {
+			button(iconPauseFilled, locales.PauseAction(), true, true, system.MediaPause)
 		} else {
-			button(iconPlayFilled, locales.PlayAction(), true, system.MediaPlay)
+			button(iconPlayFilled, locales.PlayAction(), true, true, system.MediaPlay)
 		}
-		button(iconForwardFilled, locales.NextTrack(), false, system.MediaNext)
+		button(iconForwardFilled, locales.NextTrack(), false, media.CanNext, system.MediaNext)
 	})
 }
 
