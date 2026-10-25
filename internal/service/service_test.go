@@ -914,15 +914,17 @@ func TestManagerSystemCommandsNotificationsAndShortcuts(t *testing.T) {
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("got %q, want %q", got, want)
 	}
-	shortcut := false
-	for _, msg := range fake.messages() {
-		if msg.topic == "homeassistant/select/mac2mqtt-test/run_shortcut/config" && strings.Contains(string(msg.body), "Morning") {
-			shortcut = true
+	mu.Unlock()
+	// Discovery follows the subscriptions, which the commands above used.
+	waitFor(t, func() bool {
+		for _, msg := range fake.messages() {
+			if msg.topic == "homeassistant/select/mac2mqtt-test/run_shortcut/config" && strings.Contains(string(msg.body), "Morning") {
+				return true
+			}
 		}
-	}
-	if !shortcut {
-		t.Error("the Run Shortcut select was not published with the shortcuts")
-	}
+		return false
+	})
+	mu.Lock()
 }
 
 func TestManagerPublishesActivityChanges(t *testing.T) {
