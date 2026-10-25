@@ -20,6 +20,15 @@ type Collector struct {
 	runner commandRunner
 	// readActivity reads the activity; tests replace it.
 	readActivity func() Activity
+	// nativeAudio reads the volume without a process; nil, as in tests,
+	// reads it with osascript.
+	nativeAudio func() (*AudioState, error)
+	// nativeLocked reads the lock state without a process; nil, as in
+	// tests, reads it with ioreg.
+	nativeLocked func() (bool, error)
+	// media watches Now Playing with one script; nil, as in tests, reads
+	// it with a script each time.
+	media *mediaWatcher
 
 	osVersionOnce sync.Once
 	osVersion     string
@@ -30,7 +39,11 @@ type Collector struct {
 // NewCollector creates a Collector using the real macOS commands. The version
 // is the application version reported in each snapshot.
 func NewCollector(version string) *Collector {
-	return newCollector(version, runtime.GOOS, execCommandRunner{})
+	c := newCollector(version, runtime.GOOS, execCommandRunner{})
+	c.nativeAudio = readNativeAudio
+	c.nativeLocked = readNativeScreenLocked
+	c.media = newMediaWatcher()
+	return c
 }
 
 // newCollector is the testable constructor: platform and command execution are
@@ -60,8 +73,13 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 
 	var audio *AudioState
 	if c.goos == "darwin" {
-		if state, err := readAudio(ctx, c.runner); err == nil {
-			audio = state
+		if c.nativeAudio != nil {
+			audio, _ = c.nativeAudio()
+		}
+		if audio == nil {
+			if state, err := readAudio(ctx, c.runner); err == nil {
+				audio = state
+			}
 		}
 	}
 
@@ -108,6 +126,12 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 // the last lock or unlock notification said.
 func (c *Collector) screenLocked(ctx context.Context) bool {
 	if c.goos == "darwin" {
+		if c.nativeLocked != nil {
+			if locked, err := c.nativeLocked(); err == nil {
+				c.locked.Store(locked)
+				return locked
+			}
+		}
 		if locked, err := readScreenLocked(ctx, c.runner, os.Getuid()); err == nil {
 			c.locked.Store(locked)
 			return locked
@@ -167,5 +191,17 @@ func (c *Collector) Media(ctx context.Context) *MediaInfo {
 	if c.goos != "darwin" {
 		return nil
 	}
+	if c.media != nil {
+		if media, ok := c.media.Current(); ok {
+			return media
+		}
+	}
 	return readMedia(ctx, c.runner)
+}
+
+// Close stops what the collector runs in the background.
+func (c *Collector) Close() {
+	if c.media != nil {
+		c.media.Stop()
+	}
 }

@@ -30,7 +30,8 @@ var (
 const systemObject = 1 // kAudioObjectSystemObject, kCMIOObjectSystemObject
 
 var (
-	activityOnce sync.Once
+	activityOnce      sync.Once
+	activityAudioOnce sync.Once
 
 	audioGetSize func(id uint32, addr *propertyAddress, qualifierSize uint32, qualifier unsafe.Pointer, size *uint32) int32
 	audioGet     func(id uint32, addr *propertyAddress, qualifierSize uint32, qualifier unsafe.Pointer, size *uint32, data unsafe.Pointer) int32

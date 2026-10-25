@@ -24,7 +24,7 @@ func main() {
 	if !mygo.App.RequestSingleInstanceLock() {
 		return
 	}
-	mygo.App.OnSecondInstance(func([]string, string) { a.showWindow() })
+	mygo.App.OnSecondInstance(func([]string, string) { a.ui(a.showWindow) })
 	// A menu-bar utility: no Dock icon, no app switcher entry.
 	mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
 	mygo.App.OnWindowAllClosed(func() {})

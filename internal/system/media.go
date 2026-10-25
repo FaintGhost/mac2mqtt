@@ -14,14 +14,14 @@ import (
 // Apple, and JXA's Objective-C bridge reaches MRNowPlayingRequest's class
 // methods without a helper binary.
 const nowPlayingScript = `ObjC.import('Foundation');
-function run() {
+function sample() {
   const out = {};
-  if (!$.NSBundle.bundleWithPath('/System/Library/PrivateFrameworks/MediaRemote.framework').load) return JSON.stringify(out);
+  if (!$.NSBundle.bundleWithPath('/System/Library/PrivateFrameworks/MediaRemote.framework').load) return out;
   const R = $.NSClassFromString('MRNowPlayingRequest');
-  if (R.isNil()) return JSON.stringify(out);
+  if (R.isNil()) return out;
   const item = R.localNowPlayingItem;
   const info = item.isNil() ? $() : item.nowPlayingInfo;
-  if (info.isNil()) return JSON.stringify(out);
+  if (info.isNil()) return out;
   const value = k => info.objectForKey('kMRMediaRemoteNowPlayingInfo' + k);
   const str = k => { const v = value(k); return v.isNil() ? '' : ObjC.unwrap(v.description); };
   const num = k => { const v = value(k); return v.isNil() ? 0 : v.doubleValue; };
@@ -47,7 +47,27 @@ function run() {
       if (!c.respondsToSelector('isEnabled') || c.isEnabled) out.commands.push(c.command);
     }
   }
-  return JSON.stringify(out);
+  return out;
+}
+function run(argv) {
+  if (argv[0] !== 'watch') return JSON.stringify(sample());
+  // Watching: a line when anything but the position changes, and every
+  // ten seconds besides, with when it was sampled. When the app is gone,
+  // writing to its closed pipe ends osascript.
+  const out = $.NSFileHandle.fileHandleWithStandardOutput;
+  let last = '', printed = 0;
+  for (;;) {
+    const s = sample();
+    const key = JSON.stringify(Object.assign({}, s, {elapsed: 0}));
+    const now = Date.now() / 1000;
+    if (key !== last || now - printed >= 10) {
+      s.at = now;
+      out.writeData($(JSON.stringify(s) + '\n').dataUsingEncoding($.NSUTF8StringEncoding));
+      last = key;
+      printed = now;
+    }
+    delay(2);
+  }
 }`
 
 // nowPlayingOutput is what nowPlayingScript prints.
@@ -64,6 +84,8 @@ type nowPlayingOutput struct {
 	// Commands are the MediaRemote commands the player takes, nil when
 	// macOS does not tell.
 	Commands []int `json:"commands"`
+	// At is when a watching script sampled it, in Unix seconds.
+	At float64 `json:"at"`
 }
 
 // MediaRemote's commands for the next and previous track.
@@ -91,7 +113,20 @@ func parseNowPlaying(output []byte) *MediaInfo {
 		output = output[i+1:]
 	}
 	var out nowPlayingOutput
-	if json.Unmarshal(output, &out) != nil || out.Title == "" {
+	if !decodeNowPlaying(output, &out) {
+		return nil
+	}
+	return mediaFromOutput(&out)
+}
+
+func decodeNowPlaying(line []byte, out *nowPlayingOutput) bool {
+	return json.Unmarshal(line, out) == nil
+}
+
+// mediaFromOutput turns a sample into a MediaInfo, nil when nothing has
+// registered as Now Playing.
+func mediaFromOutput(out *nowPlayingOutput) *MediaInfo {
+	if out.Title == "" {
 		return nil
 	}
 	media := &MediaInfo{

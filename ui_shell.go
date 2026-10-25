@@ -169,6 +169,8 @@ func (a *app) sidebarStatus(c *ui.Context, t *ui.Theme, p palette) {
 // it, with the page's title and actions on glass.
 func (a *app) page(c *ui.Context, t *ui.Theme, p palette, title string, bottomRoom float32, actions func(), content func()) {
 	top := float32(headerHeight + 6) // where content starts at rest
+	// A scroll of each page's own: one page's place is not another's.
+	c.Key(a.tab)
 	ui.Scroll(c).Fill().Padding(top, 24, 24+bottomRoom, 16).Gap(20).ScrollbarInsets(headerHeight, 2, bottomRoom, 0).
 		Children(content)
 	// The canvas covers what scrolls under the title: solid behind it, then

@@ -15,11 +15,17 @@ var ErrUnsupported = errors.New("system: audio control is unsupported on this pl
 type Controller struct {
 	goos   string
 	runner commandRunner
+	// nativeVolume and nativeMuted set the volume without a process; nil,
+	// as in tests, sets it with osascript.
+	nativeVolume func(int) error
+	nativeMuted  func(bool) error
 }
 
 // NewController creates a Controller that uses the real system audio commands.
 func NewController() *Controller {
-	return newController(runtime.GOOS, execCommandRunner{})
+	c := newController(runtime.GOOS, execCommandRunner{})
+	c.nativeVolume, c.nativeMuted = setNativeVolume, setNativeMuted
+	return c
 }
 
 func newController(goos string, runner commandRunner) *Controller {
@@ -36,6 +42,9 @@ func (c *Controller) SetVolume(ctx context.Context, volume int) error {
 		return ErrUnsupported
 	}
 
+	if c.nativeVolume != nil && c.nativeVolume(volume) == nil {
+		return nil
+	}
 	script := fmt.Sprintf("set volume output volume %d", volume)
 	if _, err := runCommand(ctx, c.runner, "/usr/bin/osascript", "-e", script); err != nil {
 		return fmt.Errorf("system: set volume: %w", err)
@@ -49,6 +58,9 @@ func (c *Controller) SetMuted(ctx context.Context, muted bool) error {
 		return ErrUnsupported
 	}
 
+	if c.nativeMuted != nil && c.nativeMuted(muted) == nil {
+		return nil
+	}
 	script := "set volume without output muted"
 	if muted {
 		script = "set volume with output muted"

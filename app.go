@@ -58,7 +58,11 @@ type app struct {
 	loginNeedsApproval bool
 	loginError         string
 	trayPhase          service.Phase
-	copiedYAML         bool
+
+	uiMu       sync.Mutex
+	uiQueue    []func()
+	uiRunning  bool
+	copiedYAML bool
 
 	// The updater's preferences, as the Settings switches show them.
 	autoUpdateChecks    bool
@@ -118,12 +122,7 @@ func (a *app) ready() {
 
 	a.readOpenAtLogin()
 	a.readUpdatePrefs()
-	updater.OnChange(func() {
-		if a.win != nil {
-			a.win.Update(a.readUpdatePrefs)
-		}
-	})
-	a.createWindow()
+	updater.OnChange(func() { a.ui(a.readUpdatePrefs) })
 	a.createTray()
 	a.updateTray()
 	a.installMenu()
@@ -136,12 +135,11 @@ func (a *app) ready() {
 		a.updateTray()
 	})
 
+	// The window opens on the first run, to set up; otherwise the app
+	// starts in the menu bar, with no window to keep in memory.
 	if exists == false || a.cfg.Broker.Host == "" || loadErr != nil {
 		a.tab = tabSettings
-		a.win.Show()
-		a.win.Focus()
-	} else {
-		a.win.Hide()
+		a.showWindow()
 	}
 	a.captureRuntime()
 	a.startRuntimePoller()
@@ -225,13 +223,51 @@ func (a *app) createWindow() {
 		DisableFullScreen:    true,
 		Content:              ui.View(a.view),
 	})
-	a.win.OnClose(func(e *mygo.CloseEvent) {
-		if a.quitting.Load() {
+	// Closing the window lets it go, with what it holds on the GPU, which
+	// is most of the app's memory: opening it again makes a new one.
+	win := a.win
+	win.OnClosed(func() {
+		if a.win == win {
+			a.win = nil
+		}
+	})
+}
+
+// ui runs fn on the main thread, where the app's state lives, then redraws
+// the window if one is open. It returns at once, and runs fns in the order
+// they came: the MQTT service reports its status through it, and must not
+// wait for the main thread, which may be waiting for it to stop.
+func (a *app) ui(fn func()) {
+	a.uiMu.Lock()
+	a.uiQueue = append(a.uiQueue, fn)
+	start := !a.uiRunning
+	a.uiRunning = true
+	a.uiMu.Unlock()
+	if start {
+		go a.runUI()
+	}
+}
+
+func (a *app) runUI() {
+	for {
+		a.uiMu.Lock()
+		if len(a.uiQueue) == 0 {
+			a.uiRunning = false
+			a.uiMu.Unlock()
 			return
 		}
-		e.PreventDefault()
-		a.win.Hide()
-	})
+		fns := a.uiQueue
+		a.uiQueue = nil
+		a.uiMu.Unlock()
+		mygo.RunOnMain(func() {
+			for _, fn := range fns {
+				fn()
+			}
+			if a.win != nil {
+				a.win.Invalidate()
+			}
+		})
+	}
 }
 
 func (a *app) createTray() {
@@ -382,7 +418,7 @@ func (a *app) registerLifecycle() {
 
 func (a *app) showWindow() {
 	if a.win == nil {
-		return
+		a.createWindow()
 	}
 	if a.win.IsMinimized() {
 		a.win.Restore()
@@ -402,7 +438,7 @@ func (a *app) toggleWindow() {
 		return
 	}
 	if a.win.IsVisible() {
-		a.win.Hide()
+		a.win.Close()
 	} else {
 		a.showWindow()
 	}
@@ -495,9 +531,7 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 		Snapshot:      a.snapshot,
 		OnStatus:      a.setStatus,
 		OnState: func(s system.Snapshot) {
-			if a.win != nil {
-				a.win.Update(func() { a.latest = s })
-			}
+			a.ui(func() { a.latest = s })
 		},
 		SetVolume: func(ctx context.Context, volume int) error {
 			return a.controller.SetVolume(ctx, volume)
@@ -584,17 +618,12 @@ func (a *app) refreshSnapshot() {
 		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 		defer cancel()
 		s := a.snapshot(ctx)
-		if a.win != nil {
-			a.win.Update(func() { a.latest = s })
-		}
+		a.ui(func() { a.latest = s })
 	}()
 }
 
 func (a *app) setStatus(s service.Status) {
-	if a.win == nil {
-		return
-	}
-	a.win.Update(func() {
+	a.ui(func() {
 		a.mqttStatus = s
 		a.updateTray()
 	})
@@ -604,6 +633,9 @@ func (a *app) shutdown() {
 	a.quitting.Store(true)
 	if a.runtimeCancel != nil {
 		a.runtimeCancel()
+	}
+	if a.collector != nil {
+		a.collector.Close()
 	}
 	a.svcMu.Lock()
 	run := a.svcRun
