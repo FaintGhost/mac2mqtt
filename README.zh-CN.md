@@ -3,7 +3,7 @@
 [![CI](https://github.com/FaintGhost/mac2mqtt/actions/workflows/ci.yml/badge.svg)](https://github.com/FaintGhost/mac2mqtt/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/FaintGhost/mac2mqtt)](https://github.com/FaintGhost/mac2mqtt/releases/latest)
 
-[English](README.md) | 简体中文
+**[faintghost.github.io/mac2mqtt](https://faintghost.github.io/mac2mqtt/?lang=zh)** · [English](README.md) | 简体中文
 
 一个原生的 macOS 菜单栏应用，通过 MQTT 把你的 Mac 接入 Home Assistant：网络、
 电源、锁屏、声音和正在播放的内容，并可在 HA 中控制音量、静音和播放。借助 MQTT

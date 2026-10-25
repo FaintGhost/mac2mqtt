@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.3
+
+- A new icon: a house broadcasting, for a Mac reporting to its home.
+
 ## 0.3.2
 
 - One instance at a time: opening Mac2MQTT again shows the running one's

@@ -3,7 +3,7 @@
 [![CI](https://github.com/FaintGhost/mac2mqtt/actions/workflows/ci.yml/badge.svg)](https://github.com/FaintGhost/mac2mqtt/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/FaintGhost/mac2mqtt)](https://github.com/FaintGhost/mac2mqtt/releases/latest)
 
-English | [简体中文](README.zh-CN.md)
+**[faintghost.github.io/mac2mqtt](https://faintghost.github.io/mac2mqtt/)** · English | [简体中文](README.zh-CN.md)
 
 A native macOS menu bar app that brings your Mac into Home Assistant over
 MQTT: its network, power, screen and display, camera and microphone, sound
