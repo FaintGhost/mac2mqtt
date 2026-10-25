@@ -59,8 +59,6 @@ type app struct {
 	loginError         string
 	trayPhase          service.Phase
 	copiedYAML         bool
-	// scrolls are where each page is scrolled, which its header follows.
-	scrolls [4]ui.ScrollState
 
 	// The updater's preferences, as the Settings switches show them.
 	autoUpdateChecks    bool

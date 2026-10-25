@@ -6,7 +6,7 @@
   offers to install them, with **Check for Updates…** in the menus and the
   choice to update automatically in Settings.
 - A page's title sits on the window with nothing behind it; content that
-  scrolls under it blurs and fades out, with no edge.
+  scrolls under it fades out, with no edge.
 
 ## 0.2.2
 

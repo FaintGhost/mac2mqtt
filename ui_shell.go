@@ -168,19 +168,17 @@ func (a *app) sidebarStatus(c *ui.Context, t *ui.Theme, p palette) {
 // page lays out a page: content scrolling under a header that floats over
 // it, with the page's title and actions on glass.
 func (a *app) page(c *ui.Context, t *ui.Theme, p palette, title string, bottomRoom float32, actions func(), content func()) {
-	scroll := &a.scrolls[a.tab]
-	ui.Scroll(c).Fill().Padding(headerHeight+6, 24, 24+bottomRoom, 16).Gap(20).ScrollbarInsets(headerHeight, 2, bottomRoom, 0).
-		TrackScroll(scroll).Children(content)
-	// Nothing at rest; once content scrolls under the title, it blurs
-	// progressively and fades into the canvas, with no edge or line, more
-	// so the further it scrolled, up to a few lines.
-	if scroll.Y > 0 {
-		shown := min(scroll.Y/24, 1)
-		ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(headerHeight + 22).PassThrough().Opacity(shown).
-			Material(glass.Blur{Radius: 8, Mask: &ui.LinearGradient{From: ui.RGB(0, 0, 0), To: ui.Transparent, Angle: 180, Start: 0.45, End: 1}})
-		ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(headerHeight + 22).PassThrough().Opacity(shown).
-			Material(glass.ScrollEdge{Background: p.canvas})
-	}
+	top := float32(headerHeight + 6) // where content starts at rest
+	ui.Scroll(c).Fill().Padding(top, 24, 24+bottomRoom, 16).Gap(20).ScrollbarInsets(headerHeight, 2, bottomRoom, 0).
+		Children(content)
+	// The canvas covers what scrolls under the title: solid behind it, then
+	// fading out down to where content starts at rest, so that at rest it
+	// covers nothing. Not a blur, whose spread would end sharply at the
+	// content's edge beside the sidebar: the canvas is the color of the gap
+	// there, so it ends unseen.
+	const solid = 38
+	ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(top).PassThrough().
+		LinearGradient(ui.LinearGradient{From: p.canvas, To: p.canvas.Alpha(0), Angle: 180, Start: solid / top, End: 1})
 	ui.Row(c).Absolute().Top(0).Left(0).Right(0).Height(headerHeight).Padding(0, 20, 0, 16).Gap(8).AlignItems(ui.Center).
 		DragWindow().Children(func() {
 		ui.Text(c, title).FontSize(20).FontWeight(700).Grow(1).SingleLine()
