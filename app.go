@@ -350,14 +350,18 @@ func (a *app) registerLifecycle() {
 		a.refreshSnapshot()
 		a.publishNow()
 	})
+	// Waking and a network coming back reconnect at once, rather than
+	// after the backoff the dropped connection was waiting out.
 	mygo.Power.OnResume(func() {
 		a.captureRuntime()
 		a.refreshSnapshot()
+		a.retryNow()
 		a.publishNow()
 	})
 	mygo.Network.OnChanged(func(mygo.NetworkStatus) {
 		a.captureRuntime()
 		a.refreshSnapshot()
+		a.retryNow()
 		a.publishNow()
 	})
 }
@@ -412,6 +416,15 @@ func (a *app) mediaControl(command system.MediaCommand) {
 		a.refreshSnapshot()
 		a.publishNow()
 	}()
+}
+
+func (a *app) retryNow() {
+	a.svcMu.Lock()
+	svc := a.svc
+	a.svcMu.Unlock()
+	if svc != nil {
+		svc.Retry()
+	}
 }
 
 func (a *app) publishNow() {

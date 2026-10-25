@@ -194,6 +194,7 @@
   "micInUse": "Microphone in use",
   "cameraAndMicInUse": "Camera and mic in use",
   "notInUse": "Not in use",
+  "reportFailedHeadline": "Connected, but a report didn't get through",
   "@versionShort": {
     "placeholders": {
       "version": {

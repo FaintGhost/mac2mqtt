@@ -285,6 +285,12 @@ func (a *app) status() statusInfo {
 	}
 	switch phase {
 	case service.PhaseOnline:
+		if a.mqttStatus.LastError != "" {
+			// Connected, but a report did not get through: the next one
+			// tries again on the same connection.
+			return statusInfo{phase: phase, color: colorOrange, glyph: iconAlert, label: locales.StatusConnected(),
+				headline: locales.ReportFailedHeadline(), detail: a.mqttStatus.LastError}
+		}
 		return statusInfo{phase: phase, color: colorGreen, glyph: iconCheck, label: locales.StatusConnected(),
 			headline: locales.ReportingToHomeAssistant(), detail: a.cfg.BrokerAddress()}
 	case service.PhaseConnecting:

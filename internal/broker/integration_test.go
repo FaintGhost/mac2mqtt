@@ -25,9 +25,13 @@ type mqttTestServer struct {
 	port     int
 
 	writeMu sync.Mutex
-	pubCh   chan serverMessage
-	errCh   chan error
-	gotSub  chan string
+	// holdAcks, when set, holds QoS 1 acknowledgments until that many
+	// publishes arrived, as a client waiting for each would never send.
+	holdAcks int
+	held     []uint16
+	pubCh    chan serverMessage
+	errCh    chan error
+	gotSub   chan string
 }
 
 func newMQTTTestServer(t *testing.T) *mqttTestServer {
@@ -39,7 +43,7 @@ func newMQTTTestServer(t *testing.T) *mqttTestServer {
 	s := &mqttTestServer{
 		listener: ln,
 		port:     ln.Addr().(*net.TCPAddr).Port,
-		pubCh:    make(chan serverMessage, 16),
+		pubCh:    make(chan serverMessage, 64),
 		errCh:    make(chan error, 1),
 		gotSub:   make(chan string, 16),
 	}
@@ -79,9 +83,15 @@ func (s *mqttTestServer) serve() {
 				return
 			}
 			if qos == 1 {
-				if err := s.write([]byte{0x40, 0x02, byte(packetID >> 8), byte(packetID)}); err != nil {
-					s.errCh <- err
-					return
+				s.held = append(s.held, packetID)
+				if len(s.held) >= s.holdAcks {
+					for _, id := range s.held {
+						if err := s.write([]byte{0x40, 0x02, byte(id >> 8), byte(id)}); err != nil {
+							s.errCh <- err
+							return
+						}
+					}
+					s.held = nil
 				}
 			}
 			s.pubCh <- serverMessage{topic: topic, body: payload}
@@ -91,14 +101,20 @@ func (s *mqttTestServer) serve() {
 				return
 			}
 			id := binary.BigEndian.Uint16(body[:2])
-			n := int(binary.BigEndian.Uint16(body[2:4]))
-			if len(body) < 4+n {
-				s.errCh <- fmt.Errorf("short SUBSCRIBE topic")
-				return
+			// Each filter is a length, the filter, and its QoS.
+			var codes []byte
+			for rest := body[2:]; len(rest) >= 2; {
+				n := int(binary.BigEndian.Uint16(rest[:2]))
+				if len(rest) < 3+n {
+					s.errCh <- fmt.Errorf("short SUBSCRIBE topic")
+					return
+				}
+				s.gotSub <- string(rest[2 : 2+n])
+				codes = append(codes, 0x01)
+				rest = rest[3+n:]
 			}
-			topic := string(body[4 : 4+n])
-			s.gotSub <- topic
-			if err := s.write([]byte{0x90, 0x03, byte(id >> 8), byte(id), 0x01}); err != nil {
+			ack := append([]byte{0x90, byte(2 + len(codes)), byte(id >> 8), byte(id)}, codes...)
+			if err := s.write(ack); err != nil {
 				s.errCh <- err
 				return
 			}
@@ -261,5 +277,48 @@ func TestPahoTransportRoundTrip(t *testing.T) {
 		}
 	case <-ctx.Done():
 		t.Fatal("server did not receive PUBLISH")
+	}
+}
+
+func TestPublishAllDoesNotWaitForEachAck(t *testing.T) {
+	srv := newMQTTTestServer(t)
+	const n = 20
+	srv.holdAcks = n
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	client := Dial(Config{Host: "127.0.0.1", Port: srv.port, ClientID: "batch-test", KeepAlive: 10 * time.Second, ConnectTimeout: 2 * time.Second})
+	if err := client.Connect(ctx); err != nil {
+		t.Fatalf("Connect: %v", err)
+	}
+	defer client.Disconnect(context.Background())
+
+	filters := []string{"mac2mqtt/test/a", "mac2mqtt/test/b", "mac2mqtt/test/c"}
+	if err := client.SubscribeAll(ctx, filters, 1, func(Message) {}); err != nil {
+		t.Fatalf("SubscribeAll: %v", err)
+	}
+	got := map[string]bool{}
+	for range filters {
+		got[<-srv.gotSub] = true
+	}
+	for _, f := range filters {
+		if !got[f] {
+			t.Errorf("did not subscribe to %s", f)
+		}
+	}
+
+	var batch []Publication
+	for i := 0; i < n; i++ {
+		batch = append(batch, Publication{Topic: fmt.Sprintf("mac2mqtt/test/%d", i), Payload: []byte{byte(i)}, Retain: true, QoS: 1})
+	}
+	// The server acknowledges none until all arrived: waiting for each
+	// would never finish.
+	if err := client.PublishAll(ctx, batch); err != nil {
+		t.Fatalf("PublishAll: %v", err)
+	}
+	for i := 0; i < n; i++ {
+		msg := <-srv.pubCh
+		if msg.topic != fmt.Sprintf("mac2mqtt/test/%d", i) {
+			t.Fatalf("publish %d arrived as %s: out of order", i, msg.topic)
+		}
 	}
 }

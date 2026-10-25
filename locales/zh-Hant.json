@@ -193,5 +193,6 @@
   "cameraInUse": "相機使用中",
   "micInUse": "麥克風使用中",
   "cameraAndMicInUse": "相機和麥克風使用中",
-  "notInUse": "未在使用"
+  "notInUse": "未在使用",
+  "reportFailedHeadline": "已連線，但有一次上報未送達"
 }

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"sync"
 	"testing"
@@ -26,6 +27,10 @@ type fakeClient struct {
 	lost        chan struct{}
 	lostOnce    sync.Once
 	disconnects int
+	// failPublish, if set, fails publishes to the topics it reports.
+	failPublish func(topic string) error
+	// failConnect, if set, fails Connect.
+	failConnect error
 }
 
 func newFakeClient() *fakeClient {
@@ -35,14 +40,40 @@ func newFakeClient() *fakeClient {
 	}
 }
 
-func (c *fakeClient) Connect(ctx context.Context) error { return ctx.Err() }
+func (c *fakeClient) Connect(ctx context.Context) error {
+	if c.failConnect != nil {
+		return c.failConnect
+	}
+	return ctx.Err()
+}
 func (c *fakeClient) Publish(ctx context.Context, topic string, payload []byte, retain bool, qos byte) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.failPublish != nil {
+		if err := c.failPublish(topic); err != nil {
+			return err
+		}
+	}
 	c.published = append(c.published, publishedMessage{topic: topic, body: append([]byte(nil), payload...), retain: retain})
+	return nil
+}
+func (c *fakeClient) PublishAll(ctx context.Context, messages []broker.Publication) error {
+	for _, m := range messages {
+		if err := c.Publish(ctx, m.Topic, m.Payload, m.Retain, m.QoS); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func (c *fakeClient) SubscribeAll(ctx context.Context, filters []string, qos byte, handler func(broker.Message)) error {
+	for _, filter := range filters {
+		if err := c.Subscribe(ctx, filter, qos, handler); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 func (c *fakeClient) Subscribe(ctx context.Context, filter string, qos byte, handler func(broker.Message)) error {
@@ -126,23 +157,22 @@ func TestManagerPublishesDiscoveryStateAndAvailability(t *testing.T) {
 		m.Run(ctx)
 		close(done)
 	}()
-	waitFor(t, func() bool { return len(fake.messages()) >= 31 })
+	waitFor(t, func() bool { return published(fake, "mac2mqtt/test/state") })
 	msgs := fake.messages()
-	// Clearing retained documents comes first: what is not published, and
-	// legacy discovery, are cleared with empty bodies.
+	// What is not published, and legacy discovery, are cleared with empty
+	// retained bodies.
 	cleared := map[string]bool{}
 	for _, msg := range msgs {
-		if len(msg.body) != 0 {
-			break
+		if len(msg.body) == 0 {
+			cleared[msg.topic] = msg.retain
 		}
-		cleared[msg.topic] = msg.retain
 	}
 	for _, topic := range []string{
 		"homeassistant/media_player/mac2mqtt-test/now_playing/config",
 		"homeassistant/select/mac2mqtt-test/run_shortcut/config",
 	} {
 		if !cleared[topic] {
-			t.Errorf("%s was not cleared first", topic)
+			t.Errorf("%s was not cleared", topic)
 		}
 	}
 	var state *publishedMessage
@@ -397,7 +427,7 @@ func TestManagerOmitsBatteryEntitiesOnDesktop(t *testing.T) {
 	<-done
 }
 
-func TestManagerClearsRetainedTopicsBeforeOnline(t *testing.T) {
+func TestManagerClearsRetainedTopicsOfAnEarlierConfiguration(t *testing.T) {
 	fake := newFakeClient()
 	m := New(Options{
 		Config:        testConfig(),
@@ -415,16 +445,219 @@ func TestManagerClearsRetainedTopicsBeforeOnline(t *testing.T) {
 		m.Run(ctx)
 		close(done)
 	}()
-	waitFor(t, func() bool { return len(fake.messages()) >= 2 })
-	msgs := fake.messages()
-	if msgs[0].topic != "old/discovery/config" || msgs[0].retain == false || len(msgs[0].body) != 0 {
-		t.Errorf("first cleanup = %+v", msgs[0])
+	defer func() {
+		cancel()
+		<-done
+	}()
+	waitFor(t, func() bool {
+		cleared := 0
+		for _, msg := range fake.messages() {
+			if (msg.topic == "old/discovery/config" || msg.topic == "old/state") && msg.retain && len(msg.body) == 0 {
+				cleared++
+			}
+		}
+		return cleared == 2
+	})
+}
+
+// connections hands out a new fake client for each connection.
+type connections struct {
+	mu      sync.Mutex
+	clients []*fakeClient
+	prepare func(n int, c *fakeClient)
+}
+
+func (cs *connections) dial(broker.Config) broker.Client {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	c := newFakeClient()
+	if cs.prepare != nil {
+		cs.prepare(len(cs.clients), c)
 	}
-	if msgs[1].topic != "old/state" || msgs[1].retain == false || len(msgs[1].body) != 0 {
-		t.Errorf("second cleanup = %+v", msgs[1])
+	cs.clients = append(cs.clients, c)
+	return c
+}
+
+func (cs *connections) get(i int) *fakeClient {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	if i >= len(cs.clients) {
+		return nil
 	}
-	cancel()
-	<-done
+	return cs.clients[i]
+}
+
+func (cs *connections) count() int {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	return len(cs.clients)
+}
+
+func published(c *fakeClient, topic string) bool {
+	if c == nil {
+		return false
+	}
+	for _, msg := range c.messages() {
+		if msg.topic == topic {
+			return true
+		}
+	}
+	return false
+}
+
+func discoveryCount(c *fakeClient) int {
+	n := 0
+	for _, msg := range c.messages() {
+		if strings.HasPrefix(msg.topic, "homeassistant/") {
+			n++
+		}
+	}
+	return n
+}
+
+func runManager(t *testing.T, opts Options) *Manager {
+	t.Helper()
+	m := New(opts)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		m.Run(ctx)
+		close(done)
+	}()
+	t.Cleanup(func() {
+		cancel()
+		<-done
+	})
+	return m
+}
+
+func TestReconnectDoesNotPublishDiscoveryAgain(t *testing.T) {
+	cs := &connections{}
+	runManager(t, Options{
+		Config:     testConfig(),
+		Version:    "0.1.0",
+		Snapshot:   func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient:  cs.dial,
+		RetryDelay: time.Millisecond,
+	})
+	waitFor(t, func() bool { return published(cs.get(0), "mac2mqtt/test/state") })
+	if discoveryCount(cs.get(0)) == 0 {
+		t.Fatal("the first connection published no discovery")
+	}
+	cs.get(0).markLost()
+	waitFor(t, func() bool { return published(cs.get(1), "mac2mqtt/test/state") })
+	if !published(cs.get(1), "mac2mqtt/test/availability") {
+		t.Error("the reconnect did not publish availability")
+	}
+	// The broker retains discovery: a reconnect over a slow link sends only
+	// what changes.
+	if n := discoveryCount(cs.get(1)); n != 0 {
+		t.Errorf("the reconnect published %d discovery documents again", n)
+	}
+}
+
+func TestHomeAssistantStartingRepublishesDiscovery(t *testing.T) {
+	fake := newFakeClient()
+	m := runManager(t, Options{
+		Config:     testConfig(),
+		Version:    "0.1.0",
+		Snapshot:   func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient:  func(broker.Config) broker.Client { return fake },
+		RetryDelay: time.Millisecond,
+	})
+	waitFor(t, func() bool {
+		return published(fake, "mac2mqtt/test/state") && fake.handler("homeassistant/status") != nil
+	})
+	first := discoveryCount(fake)
+	// Not within moments of publishing it: a restart sends several births.
+	fake.handler("homeassistant/status")(broker.Message{Topic: "homeassistant/status", Payload: []byte("online")})
+	m.PublishNow()
+	waitFor(t, func() bool {
+		n := 0
+		for _, msg := range fake.messages() {
+			if msg.topic == "mac2mqtt/test/state" {
+				n++
+			}
+		}
+		return n >= 2
+	})
+	if discoveryCount(fake) != first {
+		t.Fatalf("discovery was published again moments after the first")
+	}
+}
+
+func TestHomeAssistantBirthPublishesDiscoveryAgain(t *testing.T) {
+	fake := newFakeClient()
+	runManager(t, Options{
+		Config:            testConfig(),
+		Version:           "0.1.0",
+		Snapshot:          func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient:         func(broker.Config) broker.Client { return fake },
+		RetryDelay:        time.Millisecond,
+		rediscoverHoldoff: -1,
+	})
+	waitFor(t, func() bool {
+		return published(fake, "mac2mqtt/test/state") && fake.handler("homeassistant/status") != nil
+	})
+	first := discoveryCount(fake)
+	fake.handler("homeassistant/status")(broker.Message{Topic: "homeassistant/status", Payload: []byte("online")})
+	// Everything again: Home Assistant may have lost what it knew.
+	waitFor(t, func() bool { return discoveryCount(fake) >= 2*first })
+}
+
+func TestFailedPublishKeepsTheConnection(t *testing.T) {
+	var mu sync.Mutex
+	failing := true
+	fake := newFakeClient()
+	fake.failPublish = func(topic string) error {
+		mu.Lock()
+		defer mu.Unlock()
+		if failing && topic == "mac2mqtt/test/state" {
+			return errors.New("publish timed out")
+		}
+		return nil
+	}
+	cs := &connections{}
+	m := runManager(t, Options{
+		Config:   testConfig(),
+		Version:  "0.1.0",
+		Snapshot: func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient: func(cfg broker.Config) broker.Client {
+			cs.dial(cfg)
+			return fake
+		},
+		RetryDelay: time.Millisecond,
+	})
+	waitFor(t, func() bool {
+		return m.Status().Phase == PhaseOnline && strings.Contains(m.Status().LastError, "timed out")
+	})
+	mu.Lock()
+	failing = false
+	mu.Unlock()
+	m.PublishNow()
+	waitFor(t, func() bool { return published(fake, "mac2mqtt/test/state") })
+	if n := cs.count(); n != 1 || fake.disconnectCount() != 0 {
+		t.Errorf("a failed publish reconnected: %d connections, %d disconnects", n, fake.disconnectCount())
+	}
+	waitFor(t, func() bool { return m.Status().LastError == "" })
+}
+
+func TestRetryConnectsWithoutWaitingOutTheBackoff(t *testing.T) {
+	cs := &connections{prepare: func(n int, c *fakeClient) {
+		if n == 0 {
+			c.failConnect = errors.New("network is unreachable")
+		}
+	}}
+	m := runManager(t, Options{
+		Config:     testConfig(),
+		Version:    "0.1.0",
+		Snapshot:   func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient:  cs.dial,
+		RetryDelay: time.Hour,
+	})
+	waitFor(t, func() bool { return m.Status().Phase == PhaseError })
+	m.Retry()
+	waitFor(t, func() bool { return published(cs.get(1), "mac2mqtt/test/state") })
 }
 
 func TestParseControlPayloads(t *testing.T) {
@@ -735,4 +968,16 @@ func TestManagerPublishesActivityChanges(t *testing.T) {
 	mu.Unlock()
 	// The camera turning on is published without waiting for the interval.
 	waitFor(t, func() bool { return states() >= 2 })
+}
+
+func TestSameMediaIgnoresALiveStreamsGrowingDuration(t *testing.T) {
+	a := &system.MediaInfo{State: "playing", Title: "Live", DurationSeconds: 3600}
+	b := &system.MediaInfo{State: "playing", Title: "Live", DurationSeconds: 3603}
+	if !sameMedia(a, b) {
+		t.Error("a few seconds more of a live stream counted as a change")
+	}
+	b.DurationSeconds = 200
+	if sameMedia(a, b) {
+		t.Error("another duration did not count as a change")
+	}
 }

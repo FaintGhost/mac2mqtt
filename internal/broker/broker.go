@@ -21,9 +21,15 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+// The defaults tolerate a slow, lossy link, such as a VPN's relay with
+// hundreds of milliseconds of round trip: a connection is given up only
+// when the broker has not answered a ping for PingTimeout after a quiet
+// KeepAlive, not when one packet is late.
 const (
-	defaultKeepAlive      = 30 * time.Second
-	defaultConnectTimeout = 10 * time.Second
+	defaultKeepAlive      = 60 * time.Second
+	defaultConnectTimeout = 30 * time.Second
+	pingTimeout           = 20 * time.Second
+	writeTimeout          = 30 * time.Second
 	defaultWillQoS        = byte(1)
 )
 
@@ -55,9 +61,23 @@ type Message struct {
 type Client interface {
 	Connect(ctx context.Context) error
 	Publish(ctx context.Context, topic string, payload []byte, retain bool, qos byte) error
+	// PublishAll publishes the messages in order without waiting for each
+	// to be acknowledged before sending the next, then waits for them all:
+	// over a slow link, a batch takes about one round trip, not one each.
+	PublishAll(ctx context.Context, messages []Publication) error
 	Subscribe(ctx context.Context, filter string, qos byte, handler func(Message)) error
+	// SubscribeAll subscribes to the filters in one request.
+	SubscribeAll(ctx context.Context, filters []string, qos byte, handler func(Message)) error
 	Disconnect(ctx context.Context) error
 	Lost() <-chan struct{} // closed when the connection is lost
+}
+
+// Publication is one message of PublishAll.
+type Publication struct {
+	Topic   string
+	Payload []byte
+	Retain  bool
+	QoS     byte
 }
 
 type pahoClient struct {
@@ -121,6 +141,63 @@ func (c *pahoClient) Publish(ctx context.Context, topic string, payload []byte, 
 	}
 
 	return waitToken(ctx, c.client.Publish(topic, qos, retain, payload))
+}
+
+func (c *pahoClient) PublishAll(ctx context.Context, messages []Publication) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	for _, m := range messages {
+		if err := validateTopic(m.Topic); err != nil {
+			return err
+		}
+		if err := validateQoS(m.QoS); err != nil {
+			return err
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	// paho sends them in order, from one goroutine.
+	tokens := make([]mqtt.Token, len(messages))
+	for i, m := range messages {
+		tokens[i] = c.client.Publish(m.Topic, m.QoS, m.Retain, m.Payload)
+	}
+	for i, token := range tokens {
+		if err := waitToken(ctx, token); err != nil {
+			return fmt.Errorf("broker: publish %s: %w", messages[i].Topic, err)
+		}
+	}
+	return nil
+}
+
+func (c *pahoClient) SubscribeAll(ctx context.Context, filters []string, qos byte, handler func(Message)) error {
+	if len(filters) == 0 {
+		return nil
+	}
+	if err := validateQoS(qos); err != nil {
+		return err
+	}
+	if handler == nil {
+		return fmt.Errorf("broker: subscribe handler must not be nil")
+	}
+	byFilter := make(map[string]byte, len(filters))
+	for _, filter := range filters {
+		if err := validateTopic(filter); err != nil {
+			return err
+		}
+		byFilter[filter] = qos
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	wrapped := func(_ mqtt.Client, msg mqtt.Message) {
+		handler(copyMessage(msg))
+	}
+	return waitToken(ctx, c.client.SubscribeMultiple(byFilter, wrapped))
 }
 
 func (c *pahoClient) Subscribe(ctx context.Context, filter string, qos byte, handler func(Message)) error {
@@ -201,6 +278,8 @@ func (c *pahoClient) options() *mqtt.ClientOptions {
 		SetOrderMatters(false).
 		SetConnectTimeout(c.connectionTimeout()).
 		SetKeepAlive(effectiveKeepAlive(c.cfg.KeepAlive)).
+		SetPingTimeout(pingTimeout).
+		SetWriteTimeout(writeTimeout).
 		SetConnectionLostHandler(func(_ mqtt.Client, _ error) {
 			c.markLost()
 		})

@@ -4,8 +4,12 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
+	"math/rand/v2"
 	"strconv"
 	"strings"
 	"sync"
@@ -69,6 +73,9 @@ type Options struct {
 	NewClient func(broker.Config) broker.Client
 	// RetryDelay is the first reconnect delay; it doubles up to one minute.
 	RetryDelay time.Duration
+	// rediscoverHoldoff is how long after publishing discovery a birth of
+	// Home Assistant does not publish it again; tests shorten it.
+	rediscoverHoldoff time.Duration
 }
 
 // Manager runs one MQTT lifecycle at a time. Run blocks until ctx is canceled
@@ -94,6 +101,19 @@ type Manager struct {
 
 	lastActivity system.Activity
 	shortcuts    []string
+
+	// retry cuts short the wait before the next connection attempt, as
+	// when the network changes or the Mac wakes.
+	retry chan struct{}
+	// rediscover asks the connection's loop to publish discovery again, as
+	// Home Assistant asks when it starts.
+	rediscover chan struct{}
+	// discovered is a digest of the discovery last published, which a
+	// reconnect does not publish again: the broker retains it. Owned by the
+	// goroutine running Run.
+	discovered   string
+	discoveredAt time.Time
+	lastProbe    system.Snapshot
 }
 
 type commandRequest struct {
@@ -106,6 +126,9 @@ func New(opts Options) *Manager {
 	if opts.NewClient == nil {
 		opts.NewClient = broker.Dial
 	}
+	if opts.rediscoverHoldoff == 0 {
+		opts.rediscoverHoldoff = 10 * time.Second
+	}
 	if opts.RetryDelay <= 0 {
 		opts.RetryDelay = 2 * time.Second
 	}
@@ -114,6 +137,8 @@ func New(opts Options) *Manager {
 		publish:      make(chan struct{}, 1),
 		commands:     make(chan commandRequest, 32),
 		mediaRefresh: make(chan struct{}, 1),
+		retry:        make(chan struct{}, 1),
+		rediscover:   make(chan struct{}, 1),
 	}
 	m.status = Status{Phase: PhaseIdle, Broker: opts.Config.BrokerAddress()}
 	return m
@@ -124,6 +149,15 @@ func (m *Manager) Status() Status {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	return m.status
+}
+
+// Retry connects at once if the service is waiting to reconnect, as when
+// the network changed or the Mac woke, rather than after its backoff.
+func (m *Manager) Retry() {
+	select {
+	case m.retry <- struct{}{}:
+	default:
+	}
 }
 
 // PublishNow asks the running service to publish a fresh state document.
@@ -155,48 +189,40 @@ func (m *Manager) Run(ctx context.Context) {
 		}
 		m.setPhase(PhaseConnecting, "")
 		client := m.opts.NewClient(m.brokerConfig())
-		if err := client.Connect(ctx); err != nil {
+		err := client.Connect(ctx)
+		if err == nil {
+			if err = m.afterConnect(ctx, client); err != nil {
+				m.publishOffline(client)
+			}
+		}
+		if err != nil {
 			_ = disconnect(client)
 			if ctx.Err() != nil {
 				m.setPhase(PhaseIdle, "")
 				return
 			}
 			m.setPhase(PhaseError, friendlyError(err))
-			if sleep(ctx, delay) == false {
+			if !m.wait(ctx, delay) {
 				m.setPhase(PhaseIdle, "")
 				return
 			}
 			delay = nextDelay(delay)
 			continue
 		}
-		if err := m.afterConnect(ctx, client); err != nil {
-			m.setPhase(PhaseError, friendlyError(err))
-			m.publishOffline(client)
-			_ = disconnect(client)
-			if sleep(ctx, delay) == false {
-				m.setPhase(PhaseIdle, "")
-				return
-			}
-			delay = nextDelay(delay)
-			continue
-		}
-		m.setPhase(PhaseOnline, "")
 		sessionStart := time.Now()
 		reconnect := m.runConnected(ctx, client)
 		m.publishOffline(client)
 		_ = disconnect(client)
-		if reconnect == false {
+		if !reconnect || ctx.Err() != nil {
 			m.setPhase(PhaseIdle, "")
 			return
 		}
-		if ctx.Err() != nil {
-			m.setPhase(PhaseIdle, "")
-			return
-		}
+		// A connection that lasted resets the backoff: the next attempt
+		// comes soon. One dropped again at once backs off further.
 		if time.Since(sessionStart) >= time.Minute {
 			delay = m.opts.RetryDelay
 		}
-		if sleep(ctx, delay) == false {
+		if !m.wait(ctx, delay) {
 			m.setPhase(PhaseIdle, "")
 			return
 		}
@@ -204,7 +230,26 @@ func (m *Manager) Run(ctx context.Context) {
 	}
 }
 
-// runConnected returns false when Run should stop.
+// wait waits about d before the next connection attempt, less if Retry is
+// called, and reports false if ctx ended. The wait varies by a fifth, so
+// that clients a broker restart dropped do not all return at once.
+func (m *Manager) wait(ctx context.Context, d time.Duration) bool {
+	d = time.Duration(float64(d) * (0.8 + 0.4*rand.Float64()))
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-m.retry:
+		return true
+	case <-timer.C:
+		return true
+	}
+}
+
+// runConnected returns false when Run should stop. Only a lost connection
+// ends it: a publish that fails or times out on a slow link is reported,
+// and the next one tries again, while the connection lives on.
 func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 	interval := time.Duration(m.opts.Config.Reporting.IntervalSeconds) * time.Second
 	if interval <= 0 {
@@ -224,6 +269,16 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 		defer mediaTicker.Stop()
 		mediaC = mediaTicker.C
 	}
+	report := func(err error) {
+		if err != nil && ctx.Err() == nil {
+			m.setLastError(friendlyError(err))
+		}
+	}
+	readMedia := func() {
+		media := m.opts.Media(ctx)
+		m.lastMedia, m.mediaSet = media, true
+		report(m.publishMedia(ctx, client, media))
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -232,32 +287,30 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 			m.setPhase(PhaseConnecting, "connection lost; reconnecting")
 			return true
 		case <-ticker.C:
-			if err := m.publishState(ctx, client); err != nil {
-				m.setPhase(PhaseError, friendlyError(err))
-				return true
+			// Discovery that failed to publish is tried again.
+			if m.discovered == "" {
+				report(m.publishDiscovery(ctx, client, false))
 			}
+			report(m.publishState(ctx, client))
 			if m.mediaEnabled() {
-				media := m.opts.Media(ctx)
-				m.lastMedia, m.mediaSet = media, true
-				if err := m.publishMedia(ctx, client, media); err != nil {
-					m.setPhase(PhaseError, friendlyError(err))
-					return true
-				}
+				readMedia()
 			}
 		case <-m.publish:
-			if err := m.publishState(ctx, client); err != nil {
-				m.setPhase(PhaseError, friendlyError(err))
-				return true
-			}
-		case <-m.mediaRefresh:
-			if !m.mediaEnabled() {
+			report(m.publishState(ctx, client))
+		case <-m.rediscover:
+			// Home Assistant started, and lost what it knew; once is enough
+			// for the burst of births a restart may send.
+			if time.Since(m.discoveredAt) < m.opts.rediscoverHoldoff {
 				continue
 			}
-			media := m.opts.Media(ctx)
-			m.lastMedia, m.mediaSet = media, true
-			if err := m.publishMedia(ctx, client, media); err != nil {
-				m.setPhase(PhaseError, friendlyError(err))
-				return true
+			report(m.publishDiscovery(ctx, client, true))
+			report(m.publishState(ctx, client))
+			if m.mediaEnabled() {
+				readMedia()
+			}
+		case <-m.mediaRefresh:
+			if m.mediaEnabled() {
+				readMedia()
 			}
 		case <-activityC:
 			// A camera or microphone in use, or the display waking, is
@@ -267,30 +320,21 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 				continue
 			}
 			m.lastActivity = activity
-			if err := m.publishState(ctx, client); err != nil {
-				m.setPhase(PhaseError, friendlyError(err))
-				return true
-			}
+			report(m.publishState(ctx, client))
 		case <-mediaC:
 			media := m.opts.Media(ctx)
 			if m.mediaSet && sameMedia(m.lastMedia, media) {
 				continue
 			}
 			m.lastMedia, m.mediaSet = media, true
-			if err := m.publishMedia(ctx, client, media); err != nil {
-				m.setPhase(PhaseError, friendlyError(err))
-				return true
-			}
-			if err := m.publishState(ctx, client); err != nil {
-				m.setPhase(PhaseError, friendlyError(err))
-				return true
-			}
+			report(m.publishMedia(ctx, client, media))
+			report(m.publishState(ctx, client))
 		}
 	}
 }
 
 func (m *Manager) afterConnect(ctx context.Context, client broker.Client) error {
-	setupCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	setupCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	probe := system.Snapshot{}
 	if m.opts.Snapshot != nil {
@@ -314,21 +358,60 @@ func (m *Manager) afterConnect(ctx context.Context, client broker.Client) error 
 			}
 		}
 	}
-	for _, topic := range topics {
-		topic := topic
-		if err := client.Subscribe(setupCtx, topic, 1, func(msg broker.Message) {
-			m.handleCommand(client, msg)
-		}); err != nil {
-			return fmt.Errorf("subscribe %s: %w", topic, err)
+	// Home Assistant announces itself on its status topic as it starts:
+	// discovery is then published again.
+	topics = append(topics, m.haStatusTopic())
+	if err := client.SubscribeAll(setupCtx, topics, 1, func(msg broker.Message) {
+		m.handleCommand(client, msg)
+	}); err != nil {
+		return fmt.Errorf("subscribe: %w", err)
+	}
+	m.lastProbe = probe
+	if err := client.Publish(setupCtx, m.opts.Config.AvailabilityTopic(), []byte("online"), true, 1); err != nil {
+		return fmt.Errorf("publish availability: %w", err)
+	}
+	// Home Assistant shows the device available from here; what fails to
+	// publish after is reported without leaving this state.
+	m.setPhase(PhaseOnline, "")
+	// Discovery that does not publish now is tried again with the next
+	// report: the connection is up, and commands already work.
+	if err := m.publishDiscovery(setupCtx, client, false); err != nil {
+		m.setLastError(friendlyError(err))
+	}
+	// Like discovery, a state that does not publish now is published with
+	// the next report, on the same connection.
+	if err := m.publishState(setupCtx, client); err != nil {
+		m.setLastError(friendlyError(err))
+	}
+	if m.mediaEnabled() {
+		m.lastMedia = probe.Media
+		m.mediaSet = true
+		if err := m.publishMedia(setupCtx, client, probe.Media); err != nil {
+			m.setLastError(friendlyError(err))
+		}
+	}
+	return nil
+}
+
+func (m *Manager) haStatusTopic() string {
+	return m.opts.Config.HomeAssistant.DiscoveryPrefix + "/status"
+}
+
+// publishDiscovery publishes the discovery documents, and clears those of
+// what is not published, in one batch: over a slow link, each waiting for
+// its acknowledgment could take longer than a connection's setup may. The
+// broker retains them, so a reconnect publishes them again only when they
+// changed, or force asks, as when Home Assistant starts.
+func (m *Manager) publishDiscovery(ctx context.Context, client broker.Client, force bool) error {
+	entities := m.entities(m.lastProbe)
+	var batch []broker.Publication
+	clear := func(topic string) {
+		if topic != "" {
+			batch = append(batch, broker.Publication{Topic: topic, Retain: true, QoS: 1})
 		}
 	}
 	for _, topic := range m.opts.CleanupTopics {
-		if topic == "" {
-			continue
-		}
-		if err := client.Publish(setupCtx, topic, nil, true, 1); err != nil {
-			return fmt.Errorf("clear retained topic %s: %w", topic, err)
-		}
+		clear(topic)
 	}
 	// Clear the discovery of every entity not published: groups the user
 	// turned off, a battery this Mac lacks, and entities of old versions.
@@ -336,29 +419,18 @@ func (m *Manager) afterConnect(ctx context.Context, client broker.Client) error 
 	for _, entity := range entities {
 		published[entity.Component+"/"+entity.ObjectID] = true
 	}
-	for _, entity := range append(homeassistant.AllEntities(m.entityOptions(probe)), homeassistant.LegacyEntities()...) {
-		if published[entity.Component+"/"+entity.ObjectID] {
-			continue
-		}
-		topic := entity.DiscoveryTopic(m.opts.Config.HomeAssistant.DiscoveryPrefix, m.opts.Config.NodeID())
-		if err := client.Publish(setupCtx, topic, nil, true, 1); err != nil {
-			return fmt.Errorf("clear discovery %s: %w", topic, err)
+	for _, entity := range append(homeassistant.AllEntities(m.entityOptions(m.lastProbe)), homeassistant.LegacyEntities()...) {
+		if !published[entity.Component+"/"+entity.ObjectID] {
+			clear(entity.DiscoveryTopic(m.opts.Config.HomeAssistant.DiscoveryPrefix, m.opts.Config.NodeID()))
 		}
 	}
-	if m.mediaEnabled() == false {
+	if !m.mediaEnabled() {
 		stateTopic, attributesTopic := m.mediaTopics()
-		cleared := []string{stateTopic, attributesTopic}
+		clear(stateTopic)
+		clear(attributesTopic)
 		for _, field := range mediaFields {
-			cleared = append(cleared, m.opts.Config.HomeAssistant.BaseTopic+"/media/"+field)
+			clear(m.opts.Config.HomeAssistant.BaseTopic + "/media/" + field)
 		}
-		for _, topic := range cleared {
-			if err := client.Publish(setupCtx, topic, nil, true, 1); err != nil {
-				return fmt.Errorf("clear %s: %w", topic, err)
-			}
-		}
-	}
-	if err := client.Publish(setupCtx, m.opts.Config.AvailabilityTopic(), []byte("online"), true, 1); err != nil {
-		return fmt.Errorf("publish availability: %w", err)
 	}
 	for _, entity := range entities {
 		payload, err := json.Marshal(entity.Config)
@@ -366,18 +438,23 @@ func (m *Manager) afterConnect(ctx context.Context, client broker.Client) error 
 			return fmt.Errorf("encode discovery %s: %w", entity.ObjectID, err)
 		}
 		topic := entity.DiscoveryTopic(m.opts.Config.HomeAssistant.DiscoveryPrefix, m.opts.Config.NodeID())
-		if err := client.Publish(setupCtx, topic, payload, true, 1); err != nil {
-			return fmt.Errorf("publish discovery %s: %w", topic, err)
-		}
+		batch = append(batch, broker.Publication{Topic: topic, Payload: payload, Retain: true, QoS: 1})
 	}
-	if err := m.publishState(setupCtx, client); err != nil {
-		return err
+	digest := sha256.New()
+	for _, p := range batch {
+		fmt.Fprintf(digest, "%s\x00%s\x00", p.Topic, p.Payload)
 	}
-	if m.mediaEnabled() {
-		m.lastMedia = probe.Media
-		m.mediaSet = true
-		return m.publishMedia(setupCtx, client, probe.Media)
+	sum := hex.EncodeToString(digest.Sum(nil))
+	if !force && sum == m.discovered {
+		return nil
 	}
+	m.discovered = ""
+	publishCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	if err := client.PublishAll(publishCtx, batch); err != nil {
+		return fmt.Errorf("publish discovery: %w", err)
+	}
+	m.discovered, m.discoveredAt = sum, time.Now()
 	return nil
 }
 
@@ -498,6 +575,14 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 			break
 		}
 		err = m.opts.RunShortcut(commandCtx, name, input)
+	case m.haStatusTopic():
+		if strings.EqualFold(payload, "online") {
+			select {
+			case m.rediscover <- struct{}{}:
+			default:
+			}
+		}
+		return
 	case base + "/refresh":
 	// A button command only asks for a fresh report.
 	default:
@@ -643,20 +728,17 @@ func (m *Manager) publishMedia(ctx context.Context, client broker.Client, media 
 	m.publishMu.Lock()
 	defer m.publishMu.Unlock()
 	retain := m.opts.Config.Reporting.Retain
-	if err := client.Publish(publishCtx, stateTopic, []byte(state), retain, 1); err != nil {
-		return fmt.Errorf("publish media state: %w", err)
-	}
-	if err := client.Publish(publishCtx, attributesTopic, payload, retain, 1); err != nil {
-		return fmt.Errorf("publish media attributes: %w", err)
+	batch := []broker.Publication{
+		{Topic: stateTopic, Payload: []byte(state), Retain: retain, QoS: 1},
+		{Topic: attributesTopic, Payload: payload, Retain: retain, QoS: 1},
 	}
 	for _, field := range mediaFields {
-		value, ok := fields[field]
-		if !ok {
-			continue
+		if value, ok := fields[field]; ok {
+			batch = append(batch, broker.Publication{Topic: base + field, Payload: []byte(value), Retain: retain, QoS: 1})
 		}
-		if err := client.Publish(publishCtx, base+field, []byte(value), retain, 1); err != nil {
-			return fmt.Errorf("publish media %s: %w", field, err)
-		}
+	}
+	if err := client.PublishAll(publishCtx, batch); err != nil {
+		return fmt.Errorf("publish media: %w", err)
 	}
 	return nil
 }
@@ -678,8 +760,10 @@ func sameMedia(a, b *system.MediaInfo) bool {
 	if a == nil || b == nil {
 		return a == nil && b == nil
 	}
+	// A live stream's duration grows as it plays: that alone is no change
+	// worth a publish every few seconds.
 	return a.State == b.State && a.Title == b.Title && a.Artist == b.Artist &&
-		a.Album == b.Album && a.AppName == b.AppName && a.DurationSeconds == b.DurationSeconds
+		a.Album == b.Album && a.AppName == b.AppName && math.Abs(a.DurationSeconds-b.DurationSeconds) < 5
 }
 
 func (m *Manager) publishState(ctx context.Context, client broker.Client) error {
@@ -774,8 +858,8 @@ func (m *Manager) brokerConfig() broker.Config {
 		Username:           cfg.Broker.Username,
 		Password:           cfg.Broker.Password,
 		ClientID:           cfg.Broker.ClientID,
-		KeepAlive:          30 * time.Second,
-		ConnectTimeout:     10 * time.Second,
+		KeepAlive:          60 * time.Second,
+		ConnectTimeout:     30 * time.Second,
 		WillTopic:          cfg.AvailabilityTopic(),
 		WillPayload:        "offline",
 		WillRetain:         true,

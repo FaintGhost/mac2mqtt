@@ -246,6 +246,12 @@ give Mac2MQTT a broker user of its own, limited to its topics.
   and CoreGraphics every two seconds, asking only whether a device is in
   use: nothing is recorded, and no permission is needed.
 - **Volume and mute** use macOS's own audio settings.
+- **Slow or flaky links** (a VPN relay with hundreds of milliseconds of round
+  trip) are expected: messages go out in batches rather than one round trip
+  each, discovery is published once and again only when it changes or Home
+  Assistant restarts (the broker retains it), a report that fails is
+  retried without dropping the connection, keepalive tolerates late pings,
+  and waking or a network change reconnects at once.
 
 ```text
 main.go, app.go, ui_*.go   the window, the menu bar and the settings (MyGo native UI)

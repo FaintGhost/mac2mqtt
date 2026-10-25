@@ -1979,3 +1979,13 @@ func NotInUse() string { return In(i18n.Locale()).NotInUse() }
 func (msgs Messages) NotInUse() string {
 	return Catalog.Format(msgs.locale, "notInUse", nil)
 }
+
+// ReportFailedHeadline says "Connected, but a report didn't get through"
+// in the language the app shows.
+func ReportFailedHeadline() string { return In(i18n.Locale()).ReportFailedHeadline() }
+
+// ReportFailedHeadline says "Connected, but a report didn't get through"
+// in the language of msgs.
+func (msgs Messages) ReportFailedHeadline() string {
+	return Catalog.Format(msgs.locale, "reportFailedHeadline", nil)
+}
