@@ -57,12 +57,9 @@ brew install --cask faintghost/tap/mac2mqtt
 
 打开后把 Mac2MQTT 拖到“应用程序”。需要 macOS 13 或更高版本。
 
-应用暂未经过公证，首次打开时 macOS 会阻止：在“应用程序”中右键点击它并选择
-**打开**，或在 **系统设置 → 隐私与安全性** 中允许。也可以清除隔离标记：
-
-```sh
-xattr -dr com.apple.quarantine /Applications/Mac2MQTT.app
-```
+Mac2MQTT 使用 Developer ID 签名并经过 Apple 公证，可以像普通应用一样直接打开。首次连接本地网络中的
+Broker 时，macOS 会询问是否允许，请选择 **允许**。如果之前拒绝了，可以在 **系统设置 → 隐私与安全性 →
+本地网络** 中开启；无法连接是因为这个原因时，应用里会直接提示。
 
 ## 配置步骤
 
@@ -154,7 +151,6 @@ Release 工作流会检查 tag 与 `mygo.json` 是否一致，构建 arm64、amd
 ## 限制
 
 - 仅支持 macOS 13 及以上。
-- 仅做了临时签名（ad hoc），未经公证（见 [安装](#安装)）。
 - MediaRemote 是私有框架，未来的 macOS 可能会改变它。
 - 暂不发布专辑封面：MediaRemote 只通过 `osascript` 无法调用的接口提供封面。
 - 不支持 TLS 客户端证书。

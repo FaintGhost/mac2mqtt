@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.2
+
+- Signed with a Developer ID and notarized by Apple: Mac2MQTT opens like
+  any app, and macOS keeps its permissions, such as Local Network, across
+  updates.
+- When macOS's Local Network privacy keeps Mac2MQTT from a broker on the
+  local network, which it reported as "no route to host", the window says
+  what to allow, with a button to the setting.
+
 ## 0.4.1
 
 - Lighter: idle in the menu bar, Mac2MQTT takes about a fifth of the

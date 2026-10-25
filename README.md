@@ -69,13 +69,11 @@ Or download a disk image from the [latest release](https://github.com/FaintGhost
 
 Open it and drag Mac2MQTT to Applications. Requires macOS 13 or later.
 
-The app is not notarized yet. The first time, macOS refuses to open it:
-right-click it in Applications and choose **Open**, or allow it in **System
-Settings → Privacy & Security**. Or clear the quarantine flag:
-
-```sh
-xattr -dr com.apple.quarantine /Applications/Mac2MQTT.app
-```
+Mac2MQTT is signed with a Developer ID and notarized by Apple, so it opens
+like any app. The first time it connects to a broker on your local network,
+macOS asks whether to allow it: choose **Allow**. If you declined, allow it in
+**System Settings → Privacy & Security → Local Network**; the app says so
+when that is why it cannot connect.
 
 ## Set up
 
@@ -303,7 +301,10 @@ which the update window shows.
 
 The release workflow checks that the tag and `mygo.json` agree, builds the
 arm64, amd64 and universal disk images, signs the updates, and publishes
-them with their SHA-256 checksums. Updates are signed with the secret key
+them with their SHA-256 checksums. With the `MACOS_CERTIFICATE`, `MACOS_CERTIFICATE_PASSWORD`
+and `NOTARY_KEY`, `NOTARY_KEY_ID`, `NOTARY_ISSUER_ID` secrets (a Developer ID
+Application certificate and an App Store Connect API key), it signs the app
+with the Developer ID and has Apple notarize it. Updates are signed with the secret key
 that `go tool mygo keygen` made, kept in the repository's
 `MYGO_UPDATER_PRIVATE_KEY` secret; installed apps check them against the
 public key in `mygo.json`. Losing the secret key strands installed apps on
@@ -312,7 +313,6 @@ their version: keep a copy in a password manager.
 ## Limitations
 
 - macOS 13 or later only.
-- Signed ad hoc, not notarized (see [Install](#install)).
 - MediaRemote is private: a future macOS may change it.
 - Album artwork is not published: MediaRemote hands it only to an API
   `osascript` cannot call.
