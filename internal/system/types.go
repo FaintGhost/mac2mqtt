@@ -51,6 +51,7 @@ type MediaInfo struct {
 	Artist          string  `json:"artist,omitempty"`
 	Album           string  `json:"album,omitempty"`
 	AppName         string  `json:"app_name,omitempty"`
+	BundleID        string  `json:"bundle_id,omitempty"`
 	DurationSeconds float64 `json:"duration_seconds,omitempty"`
 	PositionSeconds float64 `json:"position_seconds,omitempty"`
 	PlaybackRate    float64 `json:"playback_rate,omitempty"`

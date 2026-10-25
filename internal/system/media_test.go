@@ -11,7 +11,7 @@ func TestParseNowPlaying(t *testing.T) {
 	if media == nil {
 		t.Fatal("media = nil")
 	}
-	want := MediaInfo{State: "playing", Title: "Song", Artist: "Artist", AppName: "Google Chrome", DurationSeconds: 200.5, PositionSeconds: 12.25, PlaybackRate: 1, CanNext: true, CanPrevious: true}
+	want := MediaInfo{State: "playing", Title: "Song", Artist: "Artist", AppName: "Google Chrome", BundleID: "com.google.Chrome", DurationSeconds: 200.5, PositionSeconds: 12.25, PlaybackRate: 1, CanNext: true, CanPrevious: true}
 	if *media != want {
 		t.Fatalf("media = %+v, want %+v", *media, want)
 	}
@@ -62,5 +62,22 @@ func TestParseNowPlayingSupportedCommands(t *testing.T) {
 	media = parseNowPlaying([]byte(`{"title":"Album","playing":true,"commands":[0,1,2,4,5]}`))
 	if !media.CanNext || !media.CanPrevious {
 		t.Errorf("media = %+v, want next and previous", media)
+	}
+}
+
+func TestAppIcon(t *testing.T) {
+	runner := &fakeRunner{runFn: func(_ context.Context, _ string, args ...string) ([]byte, error) {
+		if args[len(args)-1] != "com.google.Chrome" {
+			t.Errorf("args = %q", args)
+		}
+		return []byte("iVBORw0KGgo=\n"), nil
+	}}
+	c := newCollector("1", "darwin", runner)
+	data, err := c.AppIcon(context.Background(), "com.google.Chrome")
+	if err != nil || string(data[1:4]) != "PNG" {
+		t.Fatalf("icon = %q, %v", data, err)
+	}
+	if _, err := c.AppIcon(context.Background(), ""); err == nil {
+		t.Error("an icon without a bundle ID")
 	}
 }

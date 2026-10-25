@@ -3,11 +3,8 @@ package main
 import (
 	"bytes"
 	"context"
-	"image"
-	"image/color"
 	"image/png"
 	"log"
-	"math"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -58,6 +55,10 @@ type app struct {
 	loginNeedsApproval bool
 	loginError         string
 	trayPhase          service.Phase
+
+	// appIcons are the icons of the apps that played, as the Now Playing
+	// card shows them; a nil entry is one being fetched or missing.
+	appIcons map[string]*ui.Bitmap
 
 	uiMu       sync.Mutex
 	uiQueue    []func()
@@ -731,33 +732,25 @@ func cleanupTopics(old, next config.Config) []string {
 	return out
 }
 
-// trayIcon draws the menu bar's template icon: broadcast arcs over a node,
-// at a third of their opacity when dimmed.
+// trayGlyph is the app icon's house and signal, as a menu bar glyph:
+// black, which macOS tints as the menu bar wants it (a template image).
+var trayGlyph = ui.MustParseSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-linejoin="round" stroke-linecap="round">
+<path d="M12 3.6 L20.2 10.4 L20.2 20.2 L3.8 20.2 L3.8 10.4 Z" stroke-width="1.9"/>
+<path d="M9.3 13.9 A3.8 3.8 0 0 1 14.7 13.9" stroke-width="1.8"/>
+<circle cx="12" cy="16.6" r="1.25" fill="#000" stroke="none"/>
+</svg>`))
+
+// trayIcon draws the menu bar's glyph, 18 points at 2×, at a third of its
+// opacity when dimmed.
 func trayIcon(dimmed bool) []byte {
-	const size = 36
-	img := image.NewNRGBA(image.Rect(0, 0, size, size))
-	alpha := uint8(255)
+	opacity := float32(1)
 	if dimmed {
-		alpha = 90
+		opacity = 0.35
 	}
-	cx, cy := 18.0, 22.0
-	for y := 0; y < size; y++ {
-		for x := 0; x < size; x++ {
-			dx, dy := float64(x)+0.5-cx, float64(y)+0.5-cy
-			r := math.Hypot(dx, dy)
-			// Coverage of the pixel by a shape, antialiased over a pixel.
-			cover := 0.0
-			if dy < 1 {
-				for _, arc := range []float64{8, 14} {
-					cover = max(cover, 1-min(1, max(0, math.Abs(r-arc)-1.2)))
-				}
-			}
-			cover = max(cover, 1-min(1, max(0, r-3.4)))
-			if cover > 0 {
-				img.SetNRGBA(x, y, color.NRGBA{A: uint8(float64(alpha) * cover)})
-			}
-		}
-	}
+	img := ui.Render(func(c *ui.Context) {
+		c.Root().Background(ui.Transparent)
+		ui.Image(c, trayGlyph).Size(18, 18).Opacity(opacity)
+	}, 18, 18, 2)
 	var b bytes.Buffer
 	_ = png.Encode(&b, img)
 	return b.Bytes()

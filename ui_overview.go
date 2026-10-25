@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -123,20 +124,13 @@ func (a *app) nowPlayingCard(c *ui.Context, t *ui.Theme, p palette) {
 		ui.Text(c, locales.NowPlaying()).FontSize(12).FontWeight(600).TextColor(t.TextMuted).Padding(0, 12)
 		group(c, p).Padding(14).Children(func() {
 			ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
-				art := ui.Box(c).Size(64, 64).Radius(14).Center()
-				if media != nil {
-					art.Gradient(ui.Hex("#ff5e7e"), ui.Hex("#ff9f45"), 135)
+				if icon := a.appIcon(media); icon != nil {
+					// What plays, as its app's icon, whose drawing leaves
+					// a margin of its own.
+					ui.Image(c, icon).Size(72, 72).Margin(-4)
 				} else {
-					art.Background(p.fill)
+					artwork(c, t, p, media != nil)
 				}
-				art.Children(func() {
-					glyph := ui.Icon(c, iconMusic).FontSize(26)
-					if media != nil {
-						glyph.TextColor(ui.RGB(255, 255, 255))
-					} else {
-						glyph.TextColor(t.TextMuted)
-					}
-				})
 				ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(3).Children(func() {
 					switch {
 					case !published:
@@ -157,6 +151,52 @@ func (a *app) nowPlayingCard(c *ui.Context, t *ui.Theme, p palette) {
 			})
 		})
 	})
+}
+
+// artwork stands in for what plays when its app's icon is not known.
+func artwork(c *ui.Context, t *ui.Theme, p palette, playing bool) {
+	art := ui.Box(c).Size(64, 64).Radius(14).Center()
+	if playing {
+		art.Gradient(ui.Hex("#ff5e7e"), ui.Hex("#ff9f45"), 135)
+	} else {
+		art.Background(p.fill)
+	}
+	art.Children(func() {
+		glyph := ui.Icon(c, iconMusic).FontSize(26)
+		if playing {
+			glyph.TextColor(ui.RGB(255, 255, 255))
+		} else {
+			glyph.TextColor(t.TextMuted)
+		}
+	})
+}
+
+// appIcon returns the icon of the app that plays, once fetched: the first
+// time an app plays, it is fetched in the background, once.
+func (a *app) appIcon(media *system.MediaInfo) *ui.Bitmap {
+	if media == nil || media.BundleID == "" || a.collector == nil {
+		return nil
+	}
+	if a.appIcons == nil {
+		a.appIcons = map[string]*ui.Bitmap{}
+	}
+	icon, known := a.appIcons[media.BundleID]
+	if !known {
+		id := media.BundleID
+		a.appIcons[id] = nil // being fetched
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			data, err := a.collector.AppIcon(ctx, id)
+			if err != nil {
+				return
+			}
+			if bitmap, err := ui.DecodeBitmap(data); err == nil {
+				a.ui(func() { a.appIcons[id] = bitmap })
+			}
+		}()
+	}
+	return icon
 }
 
 func (a *app) mediaDetails(c *ui.Context, t *ui.Theme, p palette, media *system.MediaInfo) {

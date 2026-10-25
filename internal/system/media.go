@@ -139,6 +139,7 @@ func mediaFromOutput(out *nowPlayingOutput) *MediaInfo {
 		PositionSeconds: out.Elapsed,
 		PlaybackRate:    out.Rate,
 	}
+	media.BundleID = out.BundleID
 	if media.AppName == "" {
 		media.AppName = out.BundleID
 	}
