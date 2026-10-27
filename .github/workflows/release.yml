@@ -97,12 +97,17 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           mkdir release
-          mv "dist/darwin-arm64/Mac2MQTT $VERSION arm64.dmg" "release/Mac2MQTT-$VERSION-arm64.dmg"
-          mv "dist/darwin-amd64/Mac2MQTT $VERSION amd64.dmg" "release/Mac2MQTT-$VERSION-amd64.dmg"
-          mv "dist/darwin-universal/Mac2MQTT $VERSION.dmg" "release/Mac2MQTT-$VERSION-universal.dmg"
+          # mygo names them after the slug, mac2mqtt-<version>[-<arch>].dmg;
+          # the releases keep the names the Homebrew cask downloads.
+          mv "dist/darwin-arm64/mac2mqtt-$VERSION-arm64.dmg" "release/Mac2MQTT-$VERSION-arm64.dmg"
+          mv "dist/darwin-amd64/mac2mqtt-$VERSION-amd64.dmg" "release/Mac2MQTT-$VERSION-amd64.dmg"
+          mv "dist/darwin-universal/mac2mqtt-$VERSION.dmg" "release/Mac2MQTT-$VERSION-universal.dmg"
           # The updates keep the names their manifests point to.
           cp dist/darwin-*/*.tar.gz dist/darwin-*/update-darwin-*.json release/
-          cd release && shasum -a 256 *.dmg *.tar.gz > SHA256SUMS.txt && cat SHA256SUMS.txt && ls -la
+          # curl -fsSL .../releases/latest/download/install.sh | sh: installs
+          # from the manifests, checking the archive's signature.
+          cp dist/darwin-universal/install.sh release/
+          cd release && shasum -a 256 *.dmg *.tar.gz install.sh > SHA256SUMS.txt && cat SHA256SUMS.txt && ls -la
 
       - name: Publish the release
         env:

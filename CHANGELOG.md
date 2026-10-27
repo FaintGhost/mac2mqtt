@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- The menu bar's menu shows icons beside its items, as macOS 26's menus
+  do, and the status with a dot in its color.
+- A Control-click on the menu bar's icon opens its menu, as a right-click
+  does.
+- Updates replace the app once it has quit, so the Dock and Login Items
+  keep it; a check in the background shows its window as Sparkle does.
+- Install from Terminal, with the update's signature checked:
+  curl -fsSL https://github.com/FaintGhost/mac2mqtt/releases/latest/download/install.sh | sh
+
 ## 0.4.2
 
 - Signed with a Developer ID and notarized by Apple: Mac2MQTT opens like

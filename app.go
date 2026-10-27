@@ -55,6 +55,8 @@ type app struct {
 	loginNeedsApproval bool
 	loginError         string
 	trayPhase          service.Phase
+	// menuIcons are the tray menu's icons, made once per glyph or color.
+	menuIcons map[any]*mygo.MenuIcon
 
 	// appIcons are the icons of the apps that played, as the Now Playing
 	// card shows them; a nil entry is one being fetched or missing.
@@ -302,28 +304,28 @@ func (a *app) trayMenu() *mygo.Menu {
 	// The status and what plays read as items, not grayed out, and open
 	// the window, where they show in full.
 	open := func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }
-	status := "● " + st.label
+	status := st.label
 	if configured {
 		status += " · " + a.cfg.BrokerAddress()
 	}
-	items := []*mygo.MenuItem{{Label: status, Click: open}}
+	items := []*mygo.MenuItem{{Label: status, Icon: a.statusDot(st.color), Click: open}}
 	if m := a.latest.Media; m != nil {
-		label := "♪ " + m.Title
+		label := m.Title
 		if m.Artist != "" {
 			label += " — " + m.Artist
 		}
-		items = append(items, &mygo.MenuItem{Label: truncate(label, 48), Click: open})
+		items = append(items, &mygo.MenuItem{Label: truncate(label, 48), Icon: a.menuIcon(iconMusic), Click: open})
 	}
-	pause := locales.MenuPauseReporting()
+	pause, pauseGlyph := locales.MenuPauseReporting(), iconPause
 	if !a.cfg.Reporting.Enabled {
-		pause = locales.MenuResumeReporting()
+		pause, pauseGlyph = locales.MenuResumeReporting(), iconPlay
 	}
 	items = append(items,
 		mygo.Separator(),
-		&mygo.MenuItem{Label: locales.MenuOpenApp(), Click: func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }},
-		&mygo.MenuItem{Label: locales.MenuPublishNow(), Disabled: st.phase != service.PhaseOnline, Click: func(*mygo.MenuItem, *mygo.Window) { a.publishNow() }},
-		&mygo.MenuItem{Label: locales.MenuReconnect(), Disabled: !configured || !a.cfg.Reporting.Enabled, Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
-		&mygo.MenuItem{Label: pause, Disabled: !configured, Click: func(*mygo.MenuItem, *mygo.Window) { a.setReporting(!a.cfg.Reporting.Enabled) }},
+		&mygo.MenuItem{Label: locales.MenuOpenApp(), Icon: a.menuIcon(iconOverview), Click: func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }},
+		&mygo.MenuItem{Label: locales.MenuPublishNow(), Icon: a.menuIcon(iconSend), Disabled: st.phase != service.PhaseOnline, Click: func(*mygo.MenuItem, *mygo.Window) { a.publishNow() }},
+		&mygo.MenuItem{Label: locales.MenuReconnect(), Icon: a.menuIcon(iconRefresh), Disabled: !configured || !a.cfg.Reporting.Enabled, Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
+		&mygo.MenuItem{Label: pause, Icon: a.menuIcon(pauseGlyph), Disabled: !configured, Click: func(*mygo.MenuItem, *mygo.Window) { a.setReporting(!a.cfg.Reporting.Enabled) }},
 		mygo.Separator(),
 		&mygo.MenuItem{Label: locales.OpenAtLoginLabel(), Type: mygo.MenuItemCheckbox, Checked: a.openAtLogin, Click: func(item *mygo.MenuItem, _ *mygo.Window) {
 			a.setOpenAtLogin(item.Checked)
@@ -331,7 +333,7 @@ func (a *app) trayMenu() *mygo.Menu {
 				openLoginItems()
 			}
 		}},
-		&mygo.MenuItem{Label: locales.MenuSettings(), Click: func(*mygo.MenuItem, *mygo.Window) { a.showSettings() }},
+		&mygo.MenuItem{Label: locales.MenuSettings(), Icon: a.menuIcon(iconSettings), Click: func(*mygo.MenuItem, *mygo.Window) { a.showSettings() }},
 		updater.MenuItem(),
 		mygo.Separator(),
 		&mygo.MenuItem{Role: mygo.RoleQuit, Label: locales.QuitApp()},
@@ -364,6 +366,43 @@ func (a *app) updateTray() {
 		_ = a.tray.SetIcon(trayIcon(st.phase != service.PhaseOnline), true)
 	}
 	a.tray.SetToolTip(locales.AppName() + " — " + st.label)
+}
+
+// menuIcon draws glyph as the icon of a tray menu item, as macOS 26 shows
+// symbols beside its menus' items: 16 points at 3×, in black, which macOS
+// tints as the menu's text (a template image).
+func (a *app) menuIcon(glyph *ui.SVG) *mygo.MenuIcon {
+	return a.cachedMenuIcon(glyph, true, func(c *ui.Context) {
+		ui.Icon(c, glyph).FontSize(14).TextColor(ui.RGB(0, 0, 0))
+	})
+}
+
+// statusDot draws the status's dot, in its color, as the sidebar shows it.
+func (a *app) statusDot(color ui.Color) *mygo.MenuIcon {
+	return a.cachedMenuIcon(color, false, func(c *ui.Context) {
+		ui.Box(c).Size(8, 8).Radius(4).Background(color)
+	})
+}
+
+func (a *app) cachedMenuIcon(key any, template bool, draw func(c *ui.Context)) *mygo.MenuIcon {
+	if icon, ok := a.menuIcons[key]; ok {
+		return icon
+	}
+	img := ui.Render(func(c *ui.Context) {
+		c.Root().Background(ui.Transparent)
+		ui.Box(c).Fill().AlignItems(ui.Center).Justify(ui.Center).Children(func() { draw(c) })
+	}, 16, 16, 3)
+	var b bytes.Buffer
+	_ = png.Encode(&b, img)
+	icon, err := mygo.NewMenuIcon(b.Bytes(), template)
+	if err != nil {
+		log.Printf("Mac2MQTT: menu icon: %v", err)
+	}
+	if a.menuIcons == nil {
+		a.menuIcons = map[any]*mygo.MenuIcon{}
+	}
+	a.menuIcons[key] = icon
+	return icon
 }
 
 func truncate(s string, n int) string {
