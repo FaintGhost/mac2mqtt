@@ -47,6 +47,12 @@ Liquid Glass），没有 WebView，只有一个小巧的二进制文件。
 brew install --cask faintghost/tap/mac2mqtt
 ```
 
+或在终端中安装（会校验下载内容的签名）：
+
+```sh
+curl -fsSL https://github.com/FaintGhost/mac2mqtt/releases/latest/download/install.sh | sh
+```
+
 或从 [最新 Release](https://github.com/FaintGhost/mac2mqtt/releases/latest) 下载磁盘映像：
 
 | 文件 | 适用于 |

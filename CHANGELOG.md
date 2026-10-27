@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.3
 
 - The menu bar's menu shows icons beside its items, as macOS 26's menus
   do, and the status with a dot in its color.

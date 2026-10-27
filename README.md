@@ -59,6 +59,12 @@ With [Homebrew](https://brew.sh):
 brew install --cask faintghost/tap/mac2mqtt
 ```
 
+Or from Terminal, which checks the download's signature:
+
+```sh
+curl -fsSL https://github.com/FaintGhost/mac2mqtt/releases/latest/download/install.sh | sh
+```
+
 Or download a disk image from the [latest release](https://github.com/FaintGhost/mac2mqtt/releases/latest):
 
 | File | For |
