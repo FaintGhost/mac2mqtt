@@ -49,6 +49,9 @@ var (
 	iconCheck   = icon(`<path d="M20 6 9 17l-5-5"/>`)
 	iconAlert   = icon(`<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>`)
 	iconPause   = icon(`<rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/>`)
+	iconLogin   = icon(`<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5M15 12H3"/>`)
+	iconUpdate  = icon(`<path d="M12 15V3M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>`)
+	iconQuit    = icon(`<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.79 0"/>`)
 	iconPlay    = icon(`<path d="M7 4.5v15a1 1 0 0 0 1.5.86l11.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/>`)
 
 	// The transport controls are filled, as Control Center draws them.

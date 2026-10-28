@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.4
+
+- Every item of the menu bar's menu has its icon, so that their labels
+  line up in one column.
+
 ## 0.4.3
 
 - The menu bar's menu shows icons beside its items, as macOS 26's menus

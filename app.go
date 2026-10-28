@@ -316,6 +316,9 @@ func (a *app) trayMenu() *mygo.Menu {
 		}
 		items = append(items, &mygo.MenuItem{Label: truncate(label, 48), Icon: a.menuIcon(iconMusic), Click: open})
 	}
+	// Every item has an icon, so that the labels line up in one column.
+	update := updater.MenuItem()
+	update.Icon = a.menuIcon(iconUpdate)
 	pause, pauseGlyph := locales.MenuPauseReporting(), iconPause
 	if !a.cfg.Reporting.Enabled {
 		pause, pauseGlyph = locales.MenuResumeReporting(), iconPlay
@@ -327,16 +330,16 @@ func (a *app) trayMenu() *mygo.Menu {
 		&mygo.MenuItem{Label: locales.MenuReconnect(), Icon: a.menuIcon(iconRefresh), Disabled: !configured || !a.cfg.Reporting.Enabled, Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
 		&mygo.MenuItem{Label: pause, Icon: a.menuIcon(pauseGlyph), Disabled: !configured, Click: func(*mygo.MenuItem, *mygo.Window) { a.setReporting(!a.cfg.Reporting.Enabled) }},
 		mygo.Separator(),
-		&mygo.MenuItem{Label: locales.OpenAtLoginLabel(), Type: mygo.MenuItemCheckbox, Checked: a.openAtLogin, Click: func(item *mygo.MenuItem, _ *mygo.Window) {
+		&mygo.MenuItem{Label: locales.OpenAtLoginLabel(), Type: mygo.MenuItemCheckbox, Checked: a.openAtLogin, Icon: a.menuIcon(iconLogin), Click: func(item *mygo.MenuItem, _ *mygo.Window) {
 			a.setOpenAtLogin(item.Checked)
 			if a.loginNeedsApproval {
 				openLoginItems()
 			}
 		}},
 		&mygo.MenuItem{Label: locales.MenuSettings(), Icon: a.menuIcon(iconSettings), Click: func(*mygo.MenuItem, *mygo.Window) { a.showSettings() }},
-		updater.MenuItem(),
+		update,
 		mygo.Separator(),
-		&mygo.MenuItem{Role: mygo.RoleQuit, Label: locales.QuitApp()},
+		&mygo.MenuItem{Role: mygo.RoleQuit, Label: locales.QuitApp(), Icon: a.menuIcon(iconQuit)},
 	)
 	return mygo.NewMenu(items)
 }
