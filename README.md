@@ -118,7 +118,7 @@ Assistant.
 | Now Playing | Media State, Now Playing (title, with artist, album, app and timing as attributes), Play/Pause, Next Track and Previous Track buttons, Media player |
 | Notifications and Speech | Notification, Speak (`notify`) |
 | Shortcuts (off by default) | Run Shortcut (select of your shortcuts) |
-| Diagnostics | Last Update, App Uptime, App Version, Hostname |
+| Diagnostics | Last Update, Uptime, App Uptime, App Version, Hostname |
 
 A Refresh button, which publishes the state at once, is always there.
 
@@ -174,7 +174,8 @@ Discovery documents go to `<prefix>/<component>/<node-id>/<object-id>/config`.
     "os_version": "27.0.1",
     "arch": "arm64",
     "model": "Mac mini",
-    "model_id": "Mac16,10"
+    "model_id": "Mac16,10",
+    "uptime_seconds": 273600
   },
   "network": { "online": true, "metered": false },
   "power": { "on_battery": false, "source": "AC" },

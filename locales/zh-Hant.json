@@ -231,6 +231,7 @@
   "entitySay": "朗讀",
   "entityRunShortcut": "執行捷徑",
   "entityLastUpdate": "最後更新",
+  "entityUptime": "開機時間",
   "entityAppUptime": "執行時間",
   "entityAppVersion": "App 版本",
   "entityHostname": "主機名稱",

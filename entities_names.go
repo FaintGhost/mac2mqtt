@@ -30,6 +30,7 @@ func entityNames() map[string]string {
 		"say":                  locales.EntitySay(),
 		"run_shortcut":         locales.EntityRunShortcut(),
 		"last_update":          locales.EntityLastUpdate(),
+		"uptime":               locales.EntityUptime(),
 		"app_uptime":           locales.EntityAppUptime(),
 		"app_version":          locales.EntityAppVersion(),
 		"hostname":             locales.EntityHostname(),

@@ -104,6 +104,21 @@ func TestCollectorSnapshot(t *testing.T) {
 	requireEqual(t, "sw_vers call count after cache", swVersCalls, 1)
 }
 
+func TestCollectorUptime(t *testing.T) {
+	collector := newCollector("dev", "linux", &fakeRunner{})
+	if got := collector.Snapshot(context.Background(), Runtime{}).Device.UptimeSeconds; got != 0 {
+		t.Fatalf("uptime without a boot time = %d, want 0", got)
+	}
+	collector.bootTime = func() (time.Time, error) { return time.Now().Add(-3 * time.Hour), nil }
+	if got := collector.Snapshot(context.Background(), Runtime{}).Device.UptimeSeconds; got < 3*3600-60 || got > 3*3600+60 {
+		t.Fatalf("uptime = %d, want about %d", got, 3*3600)
+	}
+	collector.bootTime = func() (time.Time, error) { return time.Time{}, errors.New("no sysctl") }
+	if got := collector.Snapshot(context.Background(), Runtime{}).Device.UptimeSeconds; got != 0 {
+		t.Fatalf("uptime after an error = %d, want 0", got)
+	}
+}
+
 func TestCollectorNonDarwinMakesNoCommands(t *testing.T) {
 	runner := &fakeRunner{}
 	collector := newCollector("dev", "linux", runner)

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.5
+
+- Home Assistant gets the Mac's uptime, how long ago it started, sleep
+  included, beside the app's own.
+
 ## 0.4.4
 
 - Every item of the menu bar's menu has its icon, so that their labels

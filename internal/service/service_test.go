@@ -215,8 +215,8 @@ func TestManagerPublishesDiscoveryStateAndAvailability(t *testing.T) {
 			}
 		}
 	}
-	if discovery != 26 {
-		t.Errorf("discovery entities = %d, want 26", discovery)
+	if discovery != 27 {
+		t.Errorf("discovery entities = %d, want 27", discovery)
 	}
 	var got system.Snapshot
 	if err := json.Unmarshal(state.body, &got); err != nil {

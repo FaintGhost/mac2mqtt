@@ -26,8 +26,8 @@ func testOptions() Options {
 
 func TestSystemEntitiesHaveStableUniqueTopics(t *testing.T) {
 	entities := SystemEntities(testOptions())
-	if len(entities) != 28 {
-		t.Fatalf("entities = %d, want 28", len(entities))
+	if len(entities) != 29 {
+		t.Fatalf("entities = %d, want 29", len(entities))
 	}
 	topics := make(map[string]bool)
 	uniqueIDs := make(map[string]bool)
@@ -78,7 +78,7 @@ func TestSystemEntitiesExpectedEntities(t *testing.T) {
 	for _, entity := range entities {
 		byID[entity.ObjectID] = entity
 	}
-	for _, id := range []string{"network_connectivity", "charging", "battery", "power_source", "last_update", "app_uptime", "app_version", "hostname", "idle_time", "volume", "mute", "refresh", "media_state", "now_playing", "screen_locked"} {
+	for _, id := range []string{"network_connectivity", "charging", "battery", "power_source", "last_update", "uptime", "app_uptime", "app_version", "hostname", "idle_time", "volume", "mute", "refresh", "media_state", "now_playing", "screen_locked"} {
 		if _, ok := byID[id]; ok == false {
 			t.Errorf("missing entity %q", id)
 		}
@@ -114,8 +114,8 @@ func TestDesktopHasNoBatteryEntities(t *testing.T) {
 	opts := testOptions()
 	opts.HasBattery = false
 	entities := SystemEntities(opts)
-	if len(entities) != 26 {
-		t.Fatalf("desktop entities = %d, want 26", len(entities))
+	if len(entities) != 27 {
+		t.Fatalf("desktop entities = %d, want 27", len(entities))
 	}
 	for _, entity := range entities {
 		if entity.ObjectID == "battery" || entity.ObjectID == "charging" {
@@ -161,8 +161,8 @@ func TestDisabledGroupsAreLeftOut(t *testing.T) {
 			t.Errorf("disabled group published %s", entity.ObjectID)
 		}
 	}
-	if n := len(AllEntities(opts)); n != 29 {
-		t.Errorf("all entities = %d, want 29 whatever is disabled", n)
+	if n := len(AllEntities(opts)); n != 30 {
+		t.Errorf("all entities = %d, want 30 whatever is disabled", n)
 	}
 	for _, entity := range AllEntities(opts) {
 		if entity.Group == "" && entity.ObjectID != "refresh" {

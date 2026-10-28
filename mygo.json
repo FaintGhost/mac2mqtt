@@ -1,7 +1,7 @@
 {
   "name": "Mac2MQTT",
   "identifier": "dev.mac2mqtt.app",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "copyright": "© 2026 Mac2MQTT contributors",
   "out": "build",
   "macos": {

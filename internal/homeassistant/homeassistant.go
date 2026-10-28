@@ -91,6 +91,7 @@ const (
 	statePowerSource  = "{{ value_json.power.source | default('unknown') }}"
 	stateLastSeen     = "{{ value_json.last_seen | default('unknown') }}"
 	stateUptime       = "{{ value_json.app.uptime_seconds | default('unknown') }}"
+	stateSystemUptime = "{{ value_json.device.uptime_seconds | default('unknown') }}"
 	stateAppVersion   = "{{ value_json.app.version | default('unknown') }}"
 	stateHostname     = "{{ value_json.device.hostname | default('unknown') }}"
 	stateIdleTime     = "{{ value_json.session.idle_seconds | default('unknown') }}"
@@ -299,6 +300,11 @@ func allEntities(opts Options) []Entity {
 		state(GroupDiagnostics, "sensor", "last_update", "Last Update", map[string]any{
 			"value_template": stateLastSeen,
 			"device_class":   "timestamp",
+		}),
+		state(GroupDiagnostics, "sensor", "uptime", "Uptime", map[string]any{
+			"value_template":      stateSystemUptime,
+			"device_class":        "duration",
+			"unit_of_measurement": "s",
 		}),
 		state(GroupDiagnostics, "sensor", "app_uptime", "App Uptime", map[string]any{
 			"value_template":      stateUptime,

@@ -26,6 +26,9 @@ type Collector struct {
 	// nativeLocked reads the lock state without a process; nil, as in
 	// tests, reads it with ioreg.
 	nativeLocked func() (bool, error)
+	// bootTime reads when the Mac started; nil, as in tests, leaves the
+	// uptime out.
+	bootTime func() (time.Time, error)
 	// media watches Now Playing with one script; nil, as in tests, reads
 	// it with a script each time.
 	media *mediaWatcher
@@ -42,6 +45,7 @@ func NewCollector(version string) *Collector {
 	c := newCollector(version, runtime.GOOS, execCommandRunner{})
 	c.nativeAudio = readNativeAudio
 	c.nativeLocked = readNativeScreenLocked
+	c.bootTime = readBootTime
 	c.media = newMediaWatcher()
 	return c
 }
@@ -95,11 +99,12 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 			UptimeSeconds: nonNegativeSeconds(time.Since(c.start)),
 		},
 		Device: DeviceInfo{
-			Hostname:  hostname,
-			OSVersion: c.detectOSVersion(ctx),
-			Arch:      runtime.GOARCH,
-			Model:     c.detectHardware(ctx).Name,
-			ModelID:   c.detectHardware(ctx).ID,
+			Hostname:      hostname,
+			OSVersion:     c.detectOSVersion(ctx),
+			Arch:          runtime.GOARCH,
+			Model:         c.detectHardware(ctx).Name,
+			ModelID:       c.detectHardware(ctx).ID,
+			UptimeSeconds: c.uptime(now),
 		},
 		Network: NetworkInfo{
 			Online:  rt.NetworkOnline,
@@ -138,6 +143,18 @@ func (c *Collector) screenLocked(ctx context.Context) bool {
 		}
 	}
 	return c.locked.Load()
+}
+
+// uptime returns the seconds since the Mac started, or 0 when unknown.
+func (c *Collector) uptime(now time.Time) int64 {
+	if c.bootTime == nil {
+		return 0
+	}
+	boot, err := c.bootTime()
+	if err != nil || boot.IsZero() {
+		return 0
+	}
+	return nonNegativeSeconds(now.Sub(boot))
 }
 
 func nonNegativeSeconds(duration time.Duration) int64 {

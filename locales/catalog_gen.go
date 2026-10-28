@@ -2350,6 +2350,16 @@ func (msgs Messages) EntityLastUpdate() string {
 	return Catalog.Format(msgs.locale, "entityLastUpdate", nil)
 }
 
+// EntityUptime says "Uptime"
+// in the language the app shows.
+func EntityUptime() string { return In(i18n.Locale()).EntityUptime() }
+
+// EntityUptime says "Uptime"
+// in the language of msgs.
+func (msgs Messages) EntityUptime() string {
+	return Catalog.Format(msgs.locale, "entityUptime", nil)
+}
+
 // EntityAppUptime says "App Uptime"
 // in the language the app shows.
 func EntityAppUptime() string { return In(i18n.Locale()).EntityAppUptime() }

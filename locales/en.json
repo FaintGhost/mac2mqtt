@@ -231,6 +231,7 @@
   "entitySay": "Speak",
   "entityRunShortcut": "Run Shortcut",
   "entityLastUpdate": "Last Update",
+  "entityUptime": "Uptime",
   "entityAppUptime": "App Uptime",
   "entityAppVersion": "App Version",
   "entityHostname": "Hostname",

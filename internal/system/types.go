@@ -22,6 +22,8 @@ type DeviceInfo struct {
 	Arch      string `json:"arch"`
 	Model     string `json:"model,omitempty"`    // "Mac mini"
 	ModelID   string `json:"model_id,omitempty"` // "Mac16,10"
+	// UptimeSeconds is how long ago the Mac started, sleep included.
+	UptimeSeconds int64 `json:"uptime_seconds,omitempty"`
 }
 
 // NetworkInfo describes the network state supplied by the app layer.
