@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"github.com/egoist/mygo"
-	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/plugins/updater"
 	"github.com/egoist/mygo/ui"
 
@@ -15,12 +14,8 @@ import (
 const fieldWidth = 240
 
 func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
-	dirty := a.settingsDirty()
-	var bottom float32
-	if dirty || a.settingsError != "" {
-		bottom = 64
-	}
-	a.page(c, t, p, locales.PageSettingsTitle(), bottom, nil, func() {
+	a.editing = false
+	a.page(c, t, p, locales.PageSettingsTitle(), 0, nil, func() {
 		section(c, t, p, locales.GeneralTitle(), a.loginError, func() {
 			row(c, t, locales.LanguageLabel(), "", func() { a.languageSelect(c, t, p) })
 			row(c, t, locales.OpenAtLoginLabel(), locales.OpenAtLoginHelp(), func() {
@@ -40,10 +35,10 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 				ui.Switch(c, &a.draft.Reporting.Enabled).Label(locales.ReportingLabel())
 			})
 			row(c, t, locales.HostLabel(), "", func() {
-				ui.TextInput(c, &a.draft.Broker.Host).Placeholder("homeassistant.local").Width(fieldWidth)
+				a.field(ui.TextInput(c, &a.draft.Broker.Host).Placeholder("homeassistant.local").Width(fieldWidth))
 			})
 			row(c, t, locales.PortLabel(), "", func() {
-				ui.NumberInput(c, &a.editPort, 1, 65535, 1).Width(fieldWidth)
+				a.field(ui.NumberInput(c, &a.editPort, 1, 65535, 1).Width(fieldWidth))
 			})
 			row(c, t, locales.TlsLabel(), locales.TlsHelp(), func() {
 				if ui.Switch(c, &a.draft.Broker.TLS).Label(locales.TlsLabel()).Changed() {
@@ -55,29 +50,29 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 				}
 			})
 			row(c, t, locales.UsernameLabel(), "", func() {
-				ui.TextInput(c, &a.draft.Broker.Username).Placeholder(locales.OptionalPlaceholder()).Width(fieldWidth)
+				a.field(ui.TextInput(c, &a.draft.Broker.Username).Placeholder(locales.OptionalPlaceholder()).Width(fieldWidth))
 			})
 			row(c, t, locales.PasswordLabel(), "", func() {
-				ui.TextInput(c, &a.draft.Broker.Password).Password().Placeholder(locales.OptionalPlaceholder()).Width(fieldWidth)
+				a.field(ui.TextInput(c, &a.draft.Broker.Password).Password().Placeholder(locales.OptionalPlaceholder()).Width(fieldWidth))
 			})
 		})
 		section(c, t, p, locales.HomeAssistantSettingsTitle(), locales.HomeAssistantSettingsDescription(), func() {
 			row(c, t, locales.DiscoveryLabel(), "", func() {
-				ui.TextInput(c, &a.draft.HomeAssistant.DiscoveryPrefix).Placeholder("homeassistant").Width(fieldWidth)
+				a.field(ui.TextInput(c, &a.draft.HomeAssistant.DiscoveryPrefix).Placeholder("homeassistant").Width(fieldWidth))
 			})
 			row(c, t, locales.BaseTopicLabel(), "", func() {
-				ui.TextInput(c, &a.draft.HomeAssistant.BaseTopic).Placeholder("mac2mqtt/my-mac").Width(fieldWidth)
+				a.field(ui.TextInput(c, &a.draft.HomeAssistant.BaseTopic).Placeholder("mac2mqtt/my-mac").Width(fieldWidth))
 			})
 			row(c, t, locales.DeviceLabel(), "", func() {
-				ui.TextInput(c, &a.draft.HomeAssistant.DeviceName).Width(fieldWidth)
+				a.field(ui.TextInput(c, &a.draft.HomeAssistant.DeviceName).Width(fieldWidth))
 			})
 			row(c, t, locales.IntervalLabel(), locales.IntervalHelp(), func() {
-				ui.NumberInput(c, &a.editInterval, 5, 3600, 5).Width(fieldWidth)
+				a.field(ui.NumberInput(c, &a.editInterval, 5, 3600, 5).Width(fieldWidth))
 			})
 		})
 		section(c, t, p, locales.Advanced(), locales.IdentityRetentionDescription(), func() {
 			row(c, t, locales.ClientIDLabel(), locales.ClientIDHelp(), func() {
-				ui.TextInput(c, &a.draft.Broker.ClientID).Width(fieldWidth)
+				a.field(ui.TextInput(c, &a.draft.Broker.ClientID).Width(fieldWidth))
 			})
 			row(c, t, locales.RetainStateLabel(), locales.RetainStateHelp(), func() {
 				ui.Switch(c, &a.draft.Reporting.Retain).Label(locales.RetainStateLabel())
@@ -98,9 +93,21 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 				ui.Button(c, locales.OpenConfigFolder()).OnClick(func() { mygo.Shell.ShowItemInFolder(a.cfgPath) })
 			})
 		})
+		// What saving says: why it could not, or that it needs no button.
+		note, color := locales.AutosaveNote(), t.TextMuted
+		if a.settingsError != "" {
+			note, color = a.settingsError, t.Danger
+		}
+		ui.Text(c, note).FontSize(11).TextColor(color).Wrap().Padding(0, 12)
 	})
-	if bottom > 0 {
-		a.saveBar(c, t, dirty)
+	a.autosave()
+}
+
+// field notes whether a field of Settings is being edited: its changes save
+// when it loses the focus, not at each key.
+func (a *app) field(e ui.Element) {
+	if e.Focused() || e.FocusWithin() {
+		a.editing = true
 	}
 }
 
@@ -125,33 +132,32 @@ func (a *app) updatesSection(c *ui.Context, t *ui.Theme, p palette) {
 		if !a.lastUpdateCheck.IsZero() {
 			last = locales.LastChecked(a.lastUpdateCheck.Local().Format("2006-01-02 15:04"))
 		}
-		row(c, t, locales.VersionLabel(a.version), last, func() {
-			ui.Button(c, locales.CheckForUpdates()).OnClick(updater.CheckForUpdates)
-		})
-	})
-}
-
-// saveBar floats on glass at the bottom while settings have unsaved
-// changes, or saving them failed.
-func (a *app) saveBar(c *ui.Context, t *ui.Theme, dirty bool) {
-	ui.Row(c).Absolute().Left(16).Right(20).Bottom(12).Padding(8, 8, 8, 16).Gap(8).Radius(20).AlignItems(ui.Center).
-		Material(glass.Glass{}).Children(func() {
-		if a.settingsError != "" {
-			ui.Text(c, a.settingsError).FontSize(12).TextColor(t.Danger).Grow(1).Shrink(1).MinWidth(0).Wrap()
-		} else {
-			ui.Text(c, locales.ChangesInfo()).FontSize(12).TextColor(t.TextMuted).Grow(1).Shrink(1).MinWidth(0).Wrap()
+		check := locales.CheckForUpdates()
+		if a.availableUpdate != "" {
+			last = locales.UpdateAvailable(a.availableUpdate)
+			check = locales.MenuUpdateTo(a.availableUpdate)
 		}
-		ui.Button(c, locales.Revert()).Disabled(!dirty).OnClick(a.revertDraft)
-		ui.PrimaryButton(c, locales.SaveReconnect()).Disabled(!dirty).OnClick(a.saveSettings)
+		row(c, t, locales.VersionLabel(a.version), last, func() {
+			if a.availableUpdate != "" {
+				ui.PrimaryButton(c, check).OnClick(updater.CheckForUpdates)
+			} else {
+				ui.Button(c, check).OnClick(updater.CheckForUpdates)
+			}
+		})
 	})
 }
 
 // settingsDirty reports whether the settings differ from what is saved.
 func (a *app) settingsDirty() bool {
+	return !reflect.DeepEqual(a.pendingDraft(), a.cfg)
+}
+
+// pendingDraft is the settings as edited, with the numbers' fields.
+func (a *app) pendingDraft() config.Config {
 	d := a.draft
 	d.Broker.Port = int(a.editPort)
 	d.Reporting.IntervalSeconds = int(a.editInterval)
-	return !reflect.DeepEqual(d, a.cfg)
+	return d
 }
 
 func (a *app) languageSelect(c *ui.Context, t *ui.Theme, p palette) {

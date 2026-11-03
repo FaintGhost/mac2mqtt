@@ -25,13 +25,14 @@ var entityGroups = []entityGroup{
 	{homeassistant.GroupAudio, iconVolume, colorPink, locales.GroupAudioTitle, locales.GroupAudioBody},
 	{homeassistant.GroupMedia, iconMusic, colorOrange, locales.GroupMediaTitle, locales.GroupMediaBody},
 	{homeassistant.GroupNotify, iconBell, colorTeal, locales.GroupNotifyTitle, locales.GroupNotifyBody},
-	{homeassistant.GroupShortcuts, iconShortcuts, colorPurple, locales.GroupShortcutsTitle, locales.GroupShortcutsBody},
+	{homeassistant.GroupShortcuts, iconShortcuts, colorIndigo, locales.GroupShortcutsTitle, locales.GroupShortcutsBody},
 	{homeassistant.GroupDiagnostics, iconDiagnostics, colorGray, locales.GroupDiagnosticsTitle, locales.GroupDiagnosticsBody},
 }
 
 func (a *app) entitiesPage(c *ui.Context, t *ui.Theme, p palette) {
 	a.page(c, t, p, locales.PageEntitiesTitle(), 0, nil, func() {
-		section(c, t, p, locales.PublishedToHomeAssistant(), locales.EntitiesFooter(), func() {
+		a.entitiesSummary(c, t, p)
+		section(c, t, p, locales.PublishedToHomeAssistant(), "", func() {
 			for i, g := range entityGroups {
 				// Without a camera or a microphone there is nothing to choose.
 				if g.id == homeassistant.GroupActivity && !a.hasCameraOrMicrophone() {
@@ -41,10 +42,17 @@ func (a *app) entitiesPage(c *ui.Context, t *ui.Theme, p palette) {
 				ui.Row(c).FillWidth().MinHeight(52).Padding(8, 14).Gap(12).AlignItems(ui.Center).Children(func() {
 					badge(c, g.glyph, g.tint, 28, true)
 					ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(2).Children(func() {
-						ui.Text(c, g.title()).FontSize(13)
+						title := ui.Text(c, g.title()).FontSize(13)
+						if !a.publishing[i] {
+							title.TextColor(t.TextMuted)
+						}
 						ui.Text(c, g.about()).FontSize(11).TextColor(t.TextMuted).Wrap()
 					})
-					ui.Text(c, a.groupValue(g.id)).FontSize(12).TextColor(t.TextMuted).SingleLine().Ellipsis("…").MaxWidth(150)
+					value := a.groupValue(g.id)
+					if !a.publishing[i] {
+						value = locales.GroupOff()
+					}
+					ui.Text(c, value).FontSize(12).TextColor(t.TextMuted).SingleLine().Ellipsis("…").MaxWidth(150)
 					if ui.Switch(c, &a.publishing[i]).Label(g.title()).Changed() {
 						a.setPublishes(g.id, a.publishing[i])
 					}
@@ -59,6 +67,39 @@ func (a *app) entitiesPage(c *ui.Context, t *ui.Theme, p palette) {
 			valueRow(c, t, locales.DiscoveryLabel(), a.cfg.HomeAssistant.DiscoveryPrefix, true)
 			valueRow(c, t, locales.StateTopicLabel(), a.cfg.StateTopic(), true)
 			valueRow(c, t, locales.EntitiesStatLabel(), locales.EntityCount(len(a.publishedEntities())), false)
+		})
+	})
+}
+
+// entitiesSummary heads the page: how many entities Home Assistant has from
+// this Mac, and how many groups are on and off. Counts, not a progress:
+// nothing is left to finish.
+func (a *app) entitiesSummary(c *ui.Context, t *ui.Theme, p palette) {
+	on, off := 0, 0
+	for i, g := range entityGroups {
+		if g.id == homeassistant.GroupActivity && !a.hasCameraOrMicrophone() {
+			continue
+		}
+		if a.publishing[i] {
+			on++
+		} else {
+			off++
+		}
+	}
+	group(c, p).Padding(16).Children(func() {
+		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
+			badge(c, iconEntities, colorBlue, 40, true)
+			ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(3).Children(func() {
+				ui.Text(c, locales.EntitiesSummary(len(a.publishedEntities()))).FontSize(15).FontWeight(650).Wrap()
+				ui.Text(c, locales.EntitiesSummaryBody()).FontSize(12).TextColor(t.TextMuted).Wrap()
+			})
+			count := func(label string) {
+				ui.Text(c, label).FontSize(11.5).FontWeight(600).TextColor(t.TextMuted).Padding(3, 10).Radius(11).Background(p.fill).SingleLine().Shrink(0)
+			}
+			count(locales.GroupsOn(on))
+			if off > 0 {
+				count(locales.GroupsOff(off))
+			}
 		})
 	})
 }

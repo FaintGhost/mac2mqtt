@@ -1,4 +1,7 @@
-// The page's Chinese, and the latest release's download link.
+// The page's Chinese, the latest release's download link, and the sections'
+// entrance as they scroll into view.
+
+document.documentElement.classList.add("js");
 
 const zh = {
   "nav.features": "功能",
@@ -103,3 +106,30 @@ fetch("https://api.github.com/repos/FaintGhost/mac2mqtt/releases/latest")
     document.getElementById("version").textContent = release.tag_name;
   })
   .catch(() => {});
+
+// Each section's heading, then its items in turn, as it comes into view.
+const reveal = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      if (!entry.isIntersecting) continue;
+      entry.target.classList.add("in");
+      reveal.unobserve(entry.target);
+    }
+  },
+  { rootMargin: "0px 0px -10% 0px" },
+);
+// Items of one grid stagger, a row of features at a time; separate sections
+// start at once.
+function staggerIndex(selector, i) {
+  if (selector === ".features article") return i % 3;
+  if (selector === ".steps li") return i;
+  return 0;
+}
+const groups = [".head", ".features article", ".split > *", ".steps li", ".mygo > *"];
+for (const selector of groups) {
+  document.querySelectorAll(selector).forEach((el, i) => {
+    el.classList.add("reveal");
+    el.style.setProperty("--i", staggerIndex(selector, i));
+    reveal.observe(el);
+  });
+}

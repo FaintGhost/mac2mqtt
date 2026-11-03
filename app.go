@@ -6,6 +6,7 @@ import (
 	"image/png"
 	"log"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -41,8 +42,13 @@ type app struct {
 
 	mqttStatus    service.Status
 	settingsError string
-	configError   string
-	quitting      atomic.Bool
+	// editing is whether a field of Settings has the focus: its changes
+	// save once it loses it. tried is the last draft saving refused, not
+	// tried again until it changes.
+	editing     bool
+	tried       *config.Config
+	configError string
+	quitting    atomic.Bool
 
 	// publishing mirrors the published entity groups, in entityGroups'
 	// order, for the switches that turn them on and off.
@@ -61,6 +67,8 @@ type app struct {
 	// appIcons are the icons of the apps that played, as the Now Playing
 	// card shows them; a nil entry is one being fetched or missing.
 	appIcons map[string]*ui.Bitmap
+	// windowSize is the window's, as the last frame laid it out.
+	windowSize ui.Rect
 
 	uiMu       sync.Mutex
 	uiQueue    []func()
@@ -71,6 +79,7 @@ type app struct {
 	autoUpdateChecks    bool
 	autoUpdateDownloads bool
 	lastUpdateCheck     time.Time
+	availableUpdate     string
 
 	collector  *system.Collector
 	controller *system.Controller
@@ -319,6 +328,9 @@ func (a *app) trayMenu() *mygo.Menu {
 	// Every item has an icon, so that the labels line up in one column.
 	update := updater.MenuItem()
 	update.Icon = a.menuIcon(iconUpdate)
+	if v := updater.AvailableVersion(); v != "" {
+		update.Label = locales.MenuUpdateTo(v)
+	}
 	pause, pauseGlyph := locales.MenuPauseReporting(), iconPause
 	if !a.cfg.Reporting.Enabled {
 		pause, pauseGlyph = locales.MenuResumeReporting(), iconPlay
@@ -494,6 +506,7 @@ func (a *app) readUpdatePrefs() {
 	a.autoUpdateChecks = updater.AutomaticChecks()
 	a.autoUpdateDownloads = updater.AutomaticDownloads()
 	a.lastUpdateCheck = updater.LastCheck()
+	a.availableUpdate = updater.AvailableVersion()
 }
 
 // notify shows a notification from Home Assistant.
@@ -718,15 +731,27 @@ func (a *app) saveSettings() {
 	a.applyConfig(d)
 	a.settingsError = ""
 	a.configError = ""
-	a.tab = tabOverview
 	a.refreshSnapshot()
 	a.restartServiceWithCleanup(cleanup)
 }
 
-// revertDraft discards unsaved settings.
-func (a *app) revertDraft() {
-	a.applyConfig(a.cfg)
-	a.settingsError = ""
+// autosave saves the settings once they differ from what is saved and no
+// field is being edited, as macOS's settings apply: a draft that saving
+// refused is not tried again until it changes.
+func (a *app) autosave() {
+	if a.editing || !a.settingsDirty() {
+		return
+	}
+	d := a.pendingDraft()
+	if a.tried != nil && reflect.DeepEqual(*a.tried, d) {
+		return
+	}
+	a.saveSettings()
+	if a.settingsError != "" {
+		a.tried = &d
+	} else {
+		a.tried = nil
+	}
 }
 
 // cleanupTopics lists retained topics of the previous configuration that the

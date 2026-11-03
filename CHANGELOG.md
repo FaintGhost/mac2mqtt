@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+- A brighter, more even look: badges and states in bright colors of one
+  lightness, flat badges, a quieter sidebar, page titles level with the
+  app's name, and This Mac in three columns.
+- Entities opens on a summary: how many entities Home Assistant has from
+  this Mac, and how many groups are on and off.
+- Settings save as you change them, as macOS's do: a field saves when you
+  leave it, and there is no Save button to press.
+- When an update is available, the menu bar's menu, Settings and About say
+  which version, with a button to update to it.
+- The app icon's body has a faint depth.
+- The website has the new screenshots and icon, and comes in with a
+  little motion: the hero in order, sections as they scroll into view.
+
 ## 0.4.5
 
 - Home Assistant gets the Mac's uptime, how long ago it started, sleep

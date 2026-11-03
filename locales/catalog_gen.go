@@ -958,26 +958,6 @@ func (msgs Messages) OpenConfigFolder() string {
 	return Catalog.Format(msgs.locale, "openConfigFolder", nil)
 }
 
-// ChangesInfo says "You have unsaved changes. Saving reconnects to the broker."
-// in the language the app shows.
-func ChangesInfo() string { return In(i18n.Locale()).ChangesInfo() }
-
-// ChangesInfo says "You have unsaved changes. Saving reconnects to the broker."
-// in the language of msgs.
-func (msgs Messages) ChangesInfo() string {
-	return Catalog.Format(msgs.locale, "changesInfo", nil)
-}
-
-// SaveReconnect says "Save & Reconnect"
-// in the language the app shows.
-func SaveReconnect() string { return In(i18n.Locale()).SaveReconnect() }
-
-// SaveReconnect says "Save & Reconnect"
-// in the language of msgs.
-func (msgs Messages) SaveReconnect() string {
-	return Catalog.Format(msgs.locale, "saveReconnect", nil)
-}
-
 // LanguageLabel says "Language"
 // in the language the app shows.
 func LanguageLabel() string { return In(i18n.Locale()).LanguageLabel() }
@@ -1218,16 +1198,6 @@ func PublishedToHomeAssistant() string { return In(i18n.Locale()).PublishedToHom
 // in the language of msgs.
 func (msgs Messages) PublishedToHomeAssistant() string {
 	return Catalog.Format(msgs.locale, "publishedToHomeAssistant", nil)
-}
-
-// EntitiesFooter says "Changes apply at once: turning a group off removes its entities from Home Assistant."
-// in the language the app shows.
-func EntitiesFooter() string { return In(i18n.Locale()).EntitiesFooter() }
-
-// EntitiesFooter says "Changes apply at once: turning a group off removes its entities from Home Assistant."
-// in the language of msgs.
-func (msgs Messages) EntitiesFooter() string {
-	return Catalog.Format(msgs.locale, "entitiesFooter", nil)
 }
 
 // RefreshAlwaysPublished says "The Refresh button is always published."
@@ -1598,16 +1568,6 @@ func TlsHelp() string { return In(i18n.Locale()).TlsHelp() }
 // in the language of msgs.
 func (msgs Messages) TlsHelp() string {
 	return Catalog.Format(msgs.locale, "tlsHelp", nil)
-}
-
-// Revert says "Revert"
-// in the language the app shows.
-func Revert() string { return In(i18n.Locale()).Revert() }
-
-// Revert says "Revert"
-// in the language of msgs.
-func (msgs Messages) Revert() string {
-	return Catalog.Format(msgs.locale, "revert", nil)
 }
 
 // MenuPauseReporting says "Pause Reporting"
@@ -2070,6 +2030,26 @@ func (msgs Messages) LastChecked(time_ string) string {
 	return Catalog.Format(msgs.locale, "lastChecked", map[string]any{"time": time_})
 }
 
+// UpdateAvailable says "Version {version} is available"
+// in the language the app shows.
+func UpdateAvailable(version string) string { return In(i18n.Locale()).UpdateAvailable(version) }
+
+// UpdateAvailable says "Version {version} is available"
+// in the language of msgs.
+func (msgs Messages) UpdateAvailable(version string) string {
+	return Catalog.Format(msgs.locale, "updateAvailable", map[string]any{"version": version})
+}
+
+// MenuUpdateTo says "Update to {version}…"
+// in the language the app shows.
+func MenuUpdateTo(version string) string { return In(i18n.Locale()).MenuUpdateTo(version) }
+
+// MenuUpdateTo says "Update to {version}…"
+// in the language of msgs.
+func (msgs Messages) MenuUpdateTo(version string) string {
+	return Catalog.Format(msgs.locale, "menuUpdateTo", map[string]any{"version": version})
+}
+
 // UpdatesUnavailable says "This build can't update itself: install Mac2MQTT from a release disk image into Applications."
 // in the language the app shows.
 func UpdatesUnavailable() string { return In(i18n.Locale()).UpdatesUnavailable() }
@@ -2428,4 +2408,74 @@ func OpenLocalNetworkSettings() string { return In(i18n.Locale()).OpenLocalNetwo
 // in the language of msgs.
 func (msgs Messages) OpenLocalNetworkSettings() string {
 	return Catalog.Format(msgs.locale, "openLocalNetworkSettings", nil)
+}
+
+// Live says "Live"
+// in the language the app shows.
+func Live() string { return In(i18n.Locale()).Live() }
+
+// Live says "Live"
+// in the language of msgs.
+func (msgs Messages) Live() string {
+	return Catalog.Format(msgs.locale, "live", nil)
+}
+
+// EntitiesSummary says "{n, plural, one {# entity} other {# entities}} in Home Assistant"
+// in the language the app shows.
+func EntitiesSummary(n int) string { return In(i18n.Locale()).EntitiesSummary(n) }
+
+// EntitiesSummary says "{n, plural, one {# entity} other {# entities}} in Home Assistant"
+// in the language of msgs.
+func (msgs Messages) EntitiesSummary(n int) string {
+	return Catalog.Format(msgs.locale, "entitiesSummary", map[string]any{"n": n})
+}
+
+// EntitiesSummaryBody says "Turn a group off to remove its entities; it applies at once."
+// in the language the app shows.
+func EntitiesSummaryBody() string { return In(i18n.Locale()).EntitiesSummaryBody() }
+
+// EntitiesSummaryBody says "Turn a group off to remove its entities; it applies at once."
+// in the language of msgs.
+func (msgs Messages) EntitiesSummaryBody() string {
+	return Catalog.Format(msgs.locale, "entitiesSummaryBody", nil)
+}
+
+// GroupsOn says "{n, plural, one {# on} other {# on}}"
+// in the language the app shows.
+func GroupsOn(n int) string { return In(i18n.Locale()).GroupsOn(n) }
+
+// GroupsOn says "{n, plural, one {# on} other {# on}}"
+// in the language of msgs.
+func (msgs Messages) GroupsOn(n int) string {
+	return Catalog.Format(msgs.locale, "groupsOn", map[string]any{"n": n})
+}
+
+// GroupsOff says "{n, plural, one {# off} other {# off}}"
+// in the language the app shows.
+func GroupsOff(n int) string { return In(i18n.Locale()).GroupsOff(n) }
+
+// GroupsOff says "{n, plural, one {# off} other {# off}}"
+// in the language of msgs.
+func (msgs Messages) GroupsOff(n int) string {
+	return Catalog.Format(msgs.locale, "groupsOff", map[string]any{"n": n})
+}
+
+// GroupOff says "Off"
+// in the language the app shows.
+func GroupOff() string { return In(i18n.Locale()).GroupOff() }
+
+// GroupOff says "Off"
+// in the language of msgs.
+func (msgs Messages) GroupOff() string {
+	return Catalog.Format(msgs.locale, "groupOff", nil)
+}
+
+// AutosaveNote says "Changes save as you make them. Connection settings reconnect when you leave the field."
+// in the language the app shows.
+func AutosaveNote() string { return In(i18n.Locale()).AutosaveNote() }
+
+// AutosaveNote says "Changes save as you make them. Connection settings reconnect when you leave the field."
+// in the language of msgs.
+func (msgs Messages) AutosaveNote() string {
+	return Catalog.Format(msgs.locale, "autosaveNote", nil)
 }

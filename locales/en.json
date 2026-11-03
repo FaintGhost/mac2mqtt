@@ -92,8 +92,6 @@
   "skipVerifyHelp": "Only for a trusted test broker.",
   "useHostnameDefaults": "Use hostname defaults",
   "openConfigFolder": "Open config folder",
-  "changesInfo": "You have unsaved changes. Saving reconnects to the broker.",
-  "saveReconnect": "Save & Reconnect",
   "languageLabel": "Language",
   "languageFollowSystem": "Follow System",
   "languageEnglish": "English",
@@ -118,7 +116,6 @@
   "navEntities": "Entities",
   "pageEntitiesTitle": "Entities",
   "publishedToHomeAssistant": "Published to Home Assistant",
-  "entitiesFooter": "Changes apply at once: turning a group off removes its entities from Home Assistant.",
   "refreshAlwaysPublished": "The Refresh button is always published.",
   "stateTopicLabel": "State topic",
   "entitiesStatLabel": "Entities",
@@ -156,7 +153,6 @@
   "openLoginItems": "Open Login Items",
   "errorOpenAtLogin": "Could not change Open at Login: {error}",
   "tlsHelp": "Usually on port 8883.",
-  "revert": "Revert",
   "menuPauseReporting": "Pause Reporting",
   "menuResumeReporting": "Resume Reporting",
   "topicStateLabel": "State",
@@ -203,6 +199,8 @@
   "checkForUpdates": "Check for Updates…",
   "neverChecked": "Not checked yet",
   "lastChecked": "Last checked {time}",
+  "updateAvailable": "Version {version} is available",
+  "menuUpdateTo": "Update to {version}…",
   "updatesUnavailable": "This build can't update itself: install Mac2MQTT from a release disk image into Applications.",
   "metricCamera": "Camera",
   "metricMicrophone": "Microphone",
@@ -324,6 +322,53 @@
       "time": {
         "type": "String",
         "example": "2026-10-25 20:50"
+      }
+    }
+  },
+  "@updateAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.4.6"
+      }
+    }
+  },
+  "@menuUpdateTo": {
+    "placeholders": {
+      "version": {
+        "type": "String",
+        "example": "0.4.6"
+      }
+    }
+  },
+  "live": "Live",
+  "entitiesSummary": "{n, plural, one {# entity} other {# entities}} in Home Assistant",
+  "entitiesSummaryBody": "Turn a group off to remove its entities; it applies at once.",
+  "groupsOn": "{n, plural, one {# on} other {# on}}",
+  "groupsOff": "{n, plural, one {# off} other {# off}}",
+  "groupOff": "Off",
+  "autosaveNote": "Changes save as you make them. Connection settings reconnect when you leave the field.",
+  "@entitiesSummary": {
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "example": "26"
+      }
+    }
+  },
+  "@groupsOn": {
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "example": "26"
+      }
+    }
+  },
+  "@groupsOff": {
+    "placeholders": {
+      "n": {
+        "type": "int",
+        "example": "26"
       }
     }
   }

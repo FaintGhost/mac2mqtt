@@ -9,6 +9,7 @@
   --accent: #0d9488;
   --primary-bg: #0a0b0d;
   --primary-text: #ffffff;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   color-scheme: light dark;
 }
 
@@ -75,7 +76,17 @@ figure { margin: 0; }
   font-size: 13px; color: var(--muted); margin: 0 0 28px;
   border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 10px;
 }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.dot { position: relative; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+/* The dot is live, as the app's "Live": a ring leaves it now and then. */
+.dot::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: var(--accent); opacity: 0;
+  animation: live 2.4s var(--ease-out) 1.2s infinite;
+}
+@keyframes live {
+  0% { transform: scale(1); opacity: 0.5; }
+  70%, 100% { transform: scale(3); opacity: 0; }
+}
 h1 {
   font-size: clamp(44px, 7vw, 80px);
   font-weight: 600;
@@ -97,8 +108,10 @@ html:lang(zh-CN) h1, html:lang(zh-CN) h2 { word-break: keep-all; }
   height: 42px; padding: 0 18px; border-radius: 10px;
   font-weight: 500; font-size: 15px;
   border: 1px solid var(--line); color: var(--text);
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 160ms var(--ease-out);
 }
+/* Feedback: a press sinks the button a little. */
+.button:active { transform: scale(0.97); }
 .button:hover { border-color: var(--faint); }
 .button.primary { background: var(--primary-bg); color: var(--primary-text); border-color: var(--primary-bg); }
 .button.primary:hover { opacity: 0.88; }
@@ -192,6 +205,32 @@ p { margin: 0; }
   .features { grid-template-columns: 1fr; }
 }
 
+/* The hero arrives once, in order: what it is, then what it looks like. */
+.hero .wrap:first-child > * { animation: rise 700ms var(--ease-out) both; }
+.hero .wrap:first-child > .eyebrow { animation-delay: 0ms; }
+.hero .wrap:first-child > h1 { animation-delay: 80ms; }
+.hero .wrap:first-child > .lede { animation-delay: 160ms; }
+.hero .wrap:first-child > .cta { animation-delay: 240ms; }
+.hero .wrap:first-child > .fineprint { animation-delay: 320ms; }
+.hero-shot { animation: rise-shot 900ms var(--ease-out) 360ms both; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+@keyframes rise-shot { from { opacity: 0; transform: translateY(24px) scale(0.98); } }
+
+/* Sections come in as they scroll into view, once; with no script they
+   simply show. */
+.js .reveal {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 60ms);
+}
+.js .reveal.in { opacity: 1; transform: none; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  /* Gentler, not gone: fades without movement. */
+  .hero .wrap:first-child > *, .hero-shot { animation-name: fade; }
+  @keyframes fade { from { opacity: 0; } }
+  .js .reveal { transform: none; }
+  .dot::after { animation: none; }
+  .button:active { transform: none; }
 }

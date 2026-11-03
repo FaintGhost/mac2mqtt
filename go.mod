@@ -7,7 +7,7 @@ tool github.com/egoist/mygo/cmd/mygo
 require (
 	github.com/ebitengine/purego v0.11.1
 	github.com/eclipse/paho.mqtt.golang v1.5.1
-	github.com/egoist/mygo v0.7.2-0.20261027211359-fe62eb8c4a37
+	github.com/egoist/mygo v0.7.5-0.20261103011102-982590ef860f
 )
 
 require (

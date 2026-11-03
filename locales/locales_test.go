@@ -13,8 +13,8 @@ func TestTranslationCatalog(t *testing.T) {
 	if got := In("zh-Hant").NavSettings(); got != "設定" {
 		t.Errorf("zh-Hant settings = %q", got)
 	}
-	if got := In("en").SaveReconnect(); got != "Save & Reconnect" {
-		t.Errorf("en save = %q", got)
+	if got := In("en").GroupOff(); got != "Off" {
+		t.Errorf("en off = %q", got)
 	}
 	if got := In("zh-Hans").VersionLabel("0.1.0"); got != "版本 0.1.0" {
 		t.Errorf("zh-Hans version = %q", got)

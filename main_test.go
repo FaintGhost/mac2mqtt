@@ -40,7 +40,7 @@ func TestSettingsTabShowsBrokerFields(t *testing.T) {
 	a := testApp()
 	a.tab = tabSettings
 	tt := ui.NewTester(a.view, 540, 700)
-	for _, want := range []string{"MQTT broker", "Host", "Port", "TLS", "Discovery", "Base topic", "Save & Reconnect"} {
+	for _, want := range []string{"MQTT broker", "Host", "Port", "TLS", "Discovery", "Base topic"} {
 		if tt.HasText(want) == false {
 			t.Errorf("settings is missing %q; texts: %q", want, tt.Texts())
 		}
@@ -67,6 +67,32 @@ func TestSaveSettingsPersistsWithoutStartingService(t *testing.T) {
 		t.Fatalf("load saved config: %v, exists=%v", err, exists)
 	}
 	if cfg.Broker.Host != "broker.example" || cfg.Reporting.Enabled {
+		t.Errorf("saved config = %+v", cfg)
+	}
+}
+
+// TestSettingsSaveAsTheyChange checks that Settings has no save button to
+// press: a change saves once no field is being edited.
+func TestSettingsSaveAsTheyChange(t *testing.T) {
+	a := connectedTestApp()
+	a.cfgPath = filepath.Join(t.TempDir(), "config.json")
+	a.tab = tabSettings
+	tt := ui.NewTester(a.view, 820, 660)
+	tt.Frame()
+	if tt.HasText("Save & Reconnect") {
+		t.Errorf("settings still has a save button")
+	}
+	a.draft.Reporting.Enabled = false
+	a.draft.HomeAssistant.DeviceName = "Studio"
+	tt.Frame()
+	if a.settingsError != "" {
+		t.Fatalf("save failed: %s", a.settingsError)
+	}
+	cfg, exists, err := config.Load(a.cfgPath)
+	if err != nil || !exists {
+		t.Fatalf("load saved config: %v, exists=%v", err, exists)
+	}
+	if cfg.HomeAssistant.DeviceName != "Studio" || cfg.Reporting.Enabled {
 		t.Errorf("saved config = %+v", cfg)
 	}
 }

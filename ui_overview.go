@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/glass"
 	"github.com/egoist/mygo/ui"
 
 	"mac2mqtt/internal/homeassistant"
@@ -72,7 +73,7 @@ func (a *app) onboarding(c *ui.Context, t *ui.Theme, p palette) {
 
 func (a *app) statusCard(c *ui.Context, t *ui.Theme, p palette) {
 	st := a.status()
-	group(c, p).Padding(16).Gap(14).Children(func() {
+	glassCard(c).Padding(16).Gap(14).Children(func() {
 		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
 			badge(c, st.glyph, st.color, 40, true)
 			ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(3).Children(func() {
@@ -84,6 +85,8 @@ func (a *app) statusCard(c *ui.Context, t *ui.Theme, p palette) {
 				ui.Button(c, st.actionLabel).OnClick(st.action)
 			case a.cfg.Reporting.Enabled == false:
 				ui.Button(c, locales.OpenSettings()).OnClick(func() { a.tab = tabSettings })
+			case st.phase == service.PhaseOnline && st.color == colorGreen:
+				pill(c, locales.Live(), p.positive, p.positiveBg, true)
 			}
 		})
 		if a.cfg.Reporting.Enabled {
@@ -124,8 +127,8 @@ func (a *app) nowPlayingCard(c *ui.Context, t *ui.Theme, p palette) {
 	media := a.latest.Media
 	published := a.cfg.HomeAssistant.Publishes(homeassistant.GroupMedia)
 	ui.Column(c).FillWidth().Gap(6).Children(func() {
-		ui.Text(c, locales.NowPlaying()).FontSize(12).FontWeight(600).TextColor(t.TextMuted).Padding(0, 12)
-		group(c, p).Padding(14).Children(func() {
+		sectionTitle(c, t, iconMusic, colorPink, locales.NowPlaying())
+		glassCard(c).Padding(14).Children(func() {
 			ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
 				if icon := a.appIcon(media); icon != nil {
 					// What plays, as its app's icon, whose drawing leaves
@@ -156,11 +159,18 @@ func (a *app) nowPlayingCard(c *ui.Context, t *ui.Theme, p palette) {
 	})
 }
 
+// The artwork's colors, a soft pink to a soft orange, which the progress
+// of what plays takes too.
+var (
+	artworkFrom = ui.Hex("#e98092")
+	artworkTo   = ui.Hex("#f0a56b")
+)
+
 // artwork stands in for what plays when its app's icon is not known.
 func artwork(c *ui.Context, t *ui.Theme, p palette, playing bool) {
 	art := ui.Box(c).Size(64, 64).Radius(14).Center()
 	if playing {
-		art.Gradient(ui.Hex("#ff5e7e"), ui.Hex("#ff9f45"), 135)
+		art.Gradient(artworkFrom, artworkTo, 135)
 	} else {
 		art.Background(p.fill)
 	}
@@ -205,11 +215,11 @@ func (a *app) appIcon(media *system.MediaInfo) *ui.Bitmap {
 func (a *app) mediaDetails(c *ui.Context, t *ui.Theme, p palette, media *system.MediaInfo) {
 	ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 		ui.Text(c, media.Title).FontSize(14).FontWeight(650).MaxLines(2).Ellipsis("…").Grow(1).Shrink(1).MinWidth(0)
-		label, color := locales.MediaPaused(), colorGray
 		if media.State == "playing" {
-			label, color = locales.MediaPlaying(), colorGreen
+			pill(c, locales.MediaPlaying(), p.positive, p.positiveBg, false)
+		} else {
+			pill(c, locales.MediaPaused(), t.TextMuted, p.fill, false)
 		}
-		ui.Text(c, label).FontSize(10).FontWeight(650).TextColor(color).Padding(2, 7).Radius(8).Background(color.Alpha(0.14)).Shrink(0)
 	})
 	var by []string
 	for _, s := range []string{media.Artist, media.Album, media.AppName} {
@@ -235,7 +245,7 @@ func (a *app) mediaDetails(c *ui.Context, t *ui.Theme, p palette, media *system.
 	position = min(max(position, 0), media.DurationSeconds)
 	ui.Column(c).FillWidth().Gap(3).Padding(4, 0, 0).Children(func() {
 		ui.Row(c).FillWidth().Height(4).Radius(2).Background(p.fill).Children(func() {
-			ui.Box(c).WidthPercent(float32(position / media.DurationSeconds * 100)).FillHeight().Radius(2).Background(t.TextMuted)
+			ui.Box(c).WidthPercent(float32(position/media.DurationSeconds*100)).FillHeight().Radius(2).Gradient(artworkFrom, artworkTo, 90)
 		})
 		ui.Row(c).Children(func() {
 			ui.Text(c, clock(position)).FontSize(10).TextColor(t.TextMuted).FontFeatures("tnum")
@@ -272,7 +282,8 @@ func (a *app) mediaControls(c *ui.Context, t *ui.Theme, p palette, media *system
 		b.Children(func() { ui.Icon(c, glyph).FontSize(size * 0.42) })
 		b.OnClick(func() { a.mediaControl(command) })
 	}
-	ui.Row(c).Gap(6).AlignItems(ui.Center).Shrink(0).Children(func() {
+	// The controls on a capsule of glass, as Control Center's.
+	ui.Row(c).Gap(4).Padding(4).Radius(23).AlignItems(ui.Center).Shrink(0).Material(glass.Glass{}).Children(func() {
 		button(iconBackFilled, locales.PreviousTrack(), false, media.CanPrevious, system.MediaPrevious)
 		if media.State == "playing" {
 			button(iconPauseFilled, locales.PauseAction(), true, true, system.MediaPause)
@@ -363,9 +374,9 @@ func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 	tiles = append(tiles, tileSpec{iconDisplay, tint, locales.MetricDisplay(), value, locales.DisplayDetail()})
 
 	ui.Column(c).FillWidth().Gap(6).Children(func() {
-		ui.Text(c, locales.ThisMac()).FontSize(12).FontWeight(600).TextColor(t.TextMuted).Padding(0, 12)
-		// Two equal columns: a last tile alone keeps a column's width.
-		ui.Grid(c).Columns(2).Gap(12).FillWidth().Children(func() {
+		sectionTitle(c, t, iconLaptop, colorBlue, locales.ThisMac())
+		// Three equal columns: a last tile alone keeps a column's width.
+		ui.Grid(c).Columns(3).Gap(10).FillWidth().Children(func() {
 			for _, spec := range tiles {
 				tile(c, t, p, spec.glyph, spec.tint, spec.label, spec.value, spec.detail)
 			}
@@ -393,13 +404,13 @@ func (a *app) activityLabel() string {
 func tile(c *ui.Context, t *ui.Theme, p palette, glyph *ui.SVG, tint ui.Color, label, value, detail string) {
 	// Sized by its grid cell, which it fills; MinWidth lets text shorten
 	// rather than widen the column.
-	card(c, p).MinWidth(0).Padding(14).Gap(10).Children(func() {
+	card(c, p).MinWidth(0).Padding(12, 14).Gap(8).Children(func() {
 		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			badge(c, glyph, tint, 26, false)
-			ui.Text(c, label).FontSize(12).TextColor(t.TextMuted)
+			badge(c, glyph, tint, 24, true)
+			ui.Text(c, label).FontSize(12).TextColor(t.TextMuted).SingleLine().Ellipsis("…").Shrink(1).MinWidth(0)
 		})
-		ui.Column(c).Gap(2).Children(func() {
-			ui.Text(c, value).FontSize(18).FontWeight(650).SingleLine().Ellipsis("…")
+		ui.Column(c).Gap(1).Children(func() {
+			ui.Text(c, value).FontSize(17).FontWeight(650).SingleLine().Ellipsis("…")
 			ui.Text(c, detail).FontSize(11).TextColor(t.TextMuted).SingleLine().Ellipsis("…")
 		})
 	})

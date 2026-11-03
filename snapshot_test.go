@@ -34,6 +34,7 @@ func TestSnapshots(t *testing.T) {
 		{"about", tabAbout, connectedTestApp},
 		{"overview-zh", tabOverview, connectedTestApp},
 		{"entities-zh", tabEntities, connectedTestApp},
+		{"settings-scrolled", tabSettings, connectedTestApp},
 	} {
 		for _, dark := range []bool{false, true} {
 			a := page.app()
@@ -48,6 +49,11 @@ func TestSnapshots(t *testing.T) {
 				i18n.SetLocaleFunc(func() string { return "en" })
 			}
 			tt.Frame()
+			tt.Frame() // the second knows the window's size, for the scroll's edge
+			if strings.HasSuffix(page.name, "-scrolled") {
+				tt.Scroll(500, 400, 0, 130)
+				tt.Frame()
+			}
 			name := page.name
 			if dark {
 				name += "-dark"

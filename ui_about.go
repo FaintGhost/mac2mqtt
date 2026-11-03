@@ -17,8 +17,12 @@ func (a *app) aboutPage(c *ui.Context, t *ui.Theme, p palette) {
 			ui.Text(c, locales.AppName()).FontSize(22).FontWeight(700)
 			ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
 				ui.Text(c, locales.VersionLabel(a.version)).FontSize(12).TextColor(t.TextMuted)
-				ui.ButtonBase(c).Label(locales.CheckForUpdates()).TextColor(t.Accent).Children(func() {
-					ui.Text(c, locales.CheckForUpdates()).FontSize(12)
+				label := locales.CheckForUpdates()
+				if a.availableUpdate != "" {
+					label = locales.MenuUpdateTo(a.availableUpdate)
+				}
+				ui.ButtonBase(c).Label(label).TextColor(t.Accent).Children(func() {
+					ui.Text(c, label).FontSize(12)
 				}).OnClick(updater.CheckForUpdates)
 			})
 			ui.Text(c, locales.AboutBody()).FontSize(13).TextColor(t.TextMuted).TextAlign(ui.Center).Wrap().MaxWidth(420)
