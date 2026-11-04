@@ -112,7 +112,7 @@ Assistant.
 |---|---|
 | Network | Network Connectivity (binary sensor) |
 | Power | Power Source; Battery and Charging on laptops |
-| Screen and Session | Screen Locked, Display (binary sensors), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons |
+| Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons |
 | Camera and Microphone | Camera In Use, Microphone In Use (binary sensors) |
 | Sound | Volume (number), Mute (switch) |
 | Now Playing | Media State, Now Playing (title, with artist, album, app and timing as attributes), Play/Pause, Next Track and Previous Track buttons, Media player |

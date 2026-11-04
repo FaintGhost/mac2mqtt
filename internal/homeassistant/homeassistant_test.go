@@ -78,7 +78,7 @@ func TestSystemEntitiesExpectedEntities(t *testing.T) {
 	for _, entity := range entities {
 		byID[entity.ObjectID] = entity
 	}
-	for _, id := range []string{"network_connectivity", "charging", "battery", "power_source", "last_update", "uptime", "app_uptime", "app_version", "hostname", "idle_time", "volume", "mute", "refresh", "media_state", "now_playing", "screen_locked"} {
+	for _, id := range []string{"network_connectivity", "charging", "battery", "power_source", "last_update", "uptime", "app_uptime", "app_version", "hostname", "idle_time", "volume", "mute", "refresh", "media_state", "now_playing", "screen_lock"} {
 		if _, ok := byID[id]; ok == false {
 			t.Errorf("missing entity %q", id)
 		}
@@ -171,16 +171,25 @@ func TestDisabledGroupsAreLeftOut(t *testing.T) {
 	}
 }
 
-func TestScreenLockedTemplate(t *testing.T) {
+func TestScreenLock(t *testing.T) {
 	for _, entity := range SystemEntities(testOptions()) {
-		if entity.ObjectID == "screen_locked" {
-			if entity.Component != "binary_sensor" || entity.Config["value_template"] != stateLocked {
-				t.Errorf("screen locked = %+v", entity)
+		if entity.ObjectID == "screen_lock" {
+			if entity.Component != "binary_sensor" || entity.Config["device_class"] != "lock" || entity.Config["value_template"] != stateUnlocked {
+				t.Errorf("screen lock = %+v", entity)
 			}
 			return
 		}
 	}
-	t.Error("no screen_locked entity")
+	t.Error("no screen_lock entity")
+}
+
+func TestScreenLockedIsLegacy(t *testing.T) {
+	for _, entity := range LegacyEntities() {
+		if entity.Component == "binary_sensor" && entity.ObjectID == "screen_locked" {
+			return
+		}
+	}
+	t.Error("screen_locked's discovery document is not cleared")
 }
 
 func TestMediaPlayerForMQTTMediaPlayer(t *testing.T) {

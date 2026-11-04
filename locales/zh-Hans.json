@@ -209,7 +209,7 @@
   "entityPowerSource": "电源类型",
   "entityCharging": "充电中",
   "entityBattery": "电池",
-  "entityScreenLocked": "屏幕锁定",
+  "entityScreenLock": "屏幕锁",
   "entityIdleTime": "空闲时长",
   "entityDisplay": "显示器",
   "entityLockScreen": "锁定屏幕",

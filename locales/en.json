@@ -209,7 +209,7 @@
   "entityPowerSource": "Power Source",
   "entityCharging": "Charging",
   "entityBattery": "Battery",
-  "entityScreenLocked": "Screen Locked",
+  "entityScreenLock": "Screen Lock",
   "entityIdleTime": "Idle Time",
   "entityDisplay": "Display",
   "entityLockScreen": "Lock Screen",

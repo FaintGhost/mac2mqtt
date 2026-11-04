@@ -10,7 +10,7 @@ func entityNames() map[string]string {
 		"power_source":         locales.EntityPowerSource(),
 		"charging":             locales.EntityCharging(),
 		"battery":              locales.EntityBattery(),
-		"screen_locked":        locales.EntityScreenLocked(),
+		"screen_lock":          locales.EntityScreenLock(),
 		"idle_time":            locales.EntityIdleTime(),
 		"display":              locales.EntityDisplay(),
 		"lock_screen":          locales.EntityLockScreen(),

@@ -40,6 +40,8 @@ var (
 
 	mainDisplayID   func() uint32
 	displayIsAsleep func(display uint32) bool
+	displayVendor   func(display uint32) uint32
+	displayModel    func(display uint32) uint32
 )
 
 func loadActivity() {
@@ -55,6 +57,8 @@ func loadActivity() {
 		if lib, err := purego.Dlopen("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics", purego.RTLD_NOW|purego.RTLD_GLOBAL); err == nil {
 			purego.RegisterLibFunc(&mainDisplayID, lib, "CGMainDisplayID")
 			purego.RegisterLibFunc(&displayIsAsleep, lib, "CGDisplayIsAsleep")
+			purego.RegisterLibFunc(&displayVendor, lib, "CGDisplayVendorNumber")
+			purego.RegisterLibFunc(&displayModel, lib, "CGDisplayModelNumber")
 		}
 	})
 }
@@ -85,7 +89,8 @@ func readActivity() Activity {
 		}
 	}
 	if displayIsAsleep != nil {
-		a.DisplayAsleep = displayIsAsleep(mainDisplayID())
+		main := mainDisplayID()
+		a.DisplayAsleep = displayIsAsleep(main) || isPlaceholderDisplay(displayVendor(main), displayModel(main))
 	}
 	return a
 }

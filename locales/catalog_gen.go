@@ -2130,14 +2130,14 @@ func (msgs Messages) EntityBattery() string {
 	return Catalog.Format(msgs.locale, "entityBattery", nil)
 }
 
-// EntityScreenLocked says "Screen Locked"
+// EntityScreenLock says "Screen Lock"
 // in the language the app shows.
-func EntityScreenLocked() string { return In(i18n.Locale()).EntityScreenLocked() }
+func EntityScreenLock() string { return In(i18n.Locale()).EntityScreenLock() }
 
-// EntityScreenLocked says "Screen Locked"
+// EntityScreenLock says "Screen Lock"
 // in the language of msgs.
-func (msgs Messages) EntityScreenLocked() string {
-	return Catalog.Format(msgs.locale, "entityScreenLocked", nil)
+func (msgs Messages) EntityScreenLock() string {
+	return Catalog.Format(msgs.locale, "entityScreenLock", nil)
 }
 
 // EntityIdleTime says "Idle Time"

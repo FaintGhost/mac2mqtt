@@ -14,3 +14,11 @@ type Activity struct {
 	HasCamera     bool
 	HasMicrophone bool
 }
+
+// isPlaceholderDisplay tells whether a display is the one macOS makes up
+// when no screen answers, as when a monitor's power is cut at the plug: its
+// vendor is 'unkn' and its model 'virt'. The Mac has no display to show on
+// then, so the display counts as off, as when it sleeps.
+func isPlaceholderDisplay(vendor, model uint32) bool {
+	return vendor == 0x756e6b6e && model == 0x76697274 // 'unkn', 'virt'
+}

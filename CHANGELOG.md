@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.7
+
+- The display reads off when its monitor has no power, as one on a smart
+  plug that is switched off, not only when it sleeps.
+- Screen Lock replaces Screen Locked in Home Assistant: it reads Locked or
+  Unlocked, with a lock that closes and opens, where Screen Locked read On
+  while the screen was locked. Its entity is new
+  (binary_sensor.<device>_screen_lock, on while unlocked): update the
+  automations that used Screen Locked.
+
 ## 0.4.6
 
 - A brighter, more even look: badges and states in bright colors of one

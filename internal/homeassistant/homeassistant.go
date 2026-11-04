@@ -101,11 +101,12 @@ const (
 
 	stateNetworkOnline = "{% if value_json.network is defined and value_json.network.online is defined and value_json.network.online is not none %}{{ 'ON' if value_json.network.online else 'OFF' }}{% else %}unknown{% endif %}"
 	stateCharging      = "{% if value_json.power is defined and value_json.power.charging is defined and value_json.power.charging is not none %}{{ 'ON' if value_json.power.charging else 'OFF' }}{% else %}unknown{% endif %}"
-	stateLocked        = "{% if value_json.session is defined and value_json.session.locked is defined and value_json.session.locked is not none %}{{ 'ON' if value_json.session.locked else 'OFF' }}{% else %}unknown{% endif %}"
-	stateCamera        = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.camera_in_use else 'OFF' }}{% else %}unknown{% endif %}"
-	stateMicrophone    = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.microphone_in_use else 'OFF' }}{% else %}unknown{% endif %}"
-	stateDisplay       = "{% if value_json.display is defined %}{{ 'ON' if value_json.display.awake else 'OFF' }}{% else %}unknown{% endif %}"
-	stateMuted         = "{% if value_json.audio is defined and value_json.audio.muted is defined and value_json.audio.muted is not none %}{{ 'ON' if value_json.audio.muted else 'OFF' }}{% else %}unknown{% endif %}"
+	// The lock device class's ON is unlocked.
+	stateUnlocked   = "{% if value_json.session is defined and value_json.session.locked is defined and value_json.session.locked is not none %}{{ 'OFF' if value_json.session.locked else 'ON' }}{% else %}unknown{% endif %}"
+	stateCamera     = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.camera_in_use else 'OFF' }}{% else %}unknown{% endif %}"
+	stateMicrophone = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.microphone_in_use else 'OFF' }}{% else %}unknown{% endif %}"
+	stateDisplay    = "{% if value_json.display is defined %}{{ 'ON' if value_json.display.awake else 'OFF' }}{% else %}unknown{% endif %}"
+	stateMuted      = "{% if value_json.audio is defined and value_json.audio.muted is defined and value_json.audio.muted is not none %}{{ 'ON' if value_json.audio.muted else 'OFF' }}{% else %}unknown{% endif %}"
 )
 
 // Groups of entities, which the user publishes or not as a whole.
@@ -205,10 +206,11 @@ func allEntities(opts Options) []Entity {
 			"unit_of_measurement": "%",
 			"state_class":         "measurement",
 		}),
-		// Not the lock device class: its ON means unlocked.
-		state(GroupSession, "binary_sensor", "screen_locked", "Screen Locked", map[string]any{
-			"value_template": stateLocked,
-			"icon":           "mdi:monitor-lock",
+		// Home Assistant shows it Locked or Unlocked, with a closed or an
+		// open lock.
+		state(GroupSession, "binary_sensor", "screen_lock", "Screen Lock", map[string]any{
+			"value_template": stateUnlocked,
+			"device_class":   "lock",
 		}),
 		state(GroupSession, "sensor", "idle_time", "Idle Time", map[string]any{
 			"value_template":      stateIdleTime,
@@ -423,6 +425,9 @@ func LegacyEntities() []Entity {
 	return []Entity{
 		// Home Assistant ignored it: MQTT has no media_player platform.
 		{Component: "media_player", ObjectID: "now_playing"},
+		// Screen Lock replaced it in 0.4.7: its ON meant locked, which Home
+		// Assistant showed as On.
+		{Component: "binary_sensor", ObjectID: "screen_locked"},
 	}
 }
 
