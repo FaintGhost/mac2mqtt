@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.8
+
+- The menu bar's menu shows the connection's state over the broker's
+  address, and the song over its artist, each on two lines.
+- Settings says when updates were last checked as "5 minutes ago" or
+  "yesterday", in the app's language.
+- Updating removes the files the new version no longer has.
+
 ## 0.4.7
 
 - The display reads off when its monitor has no power, as one on a smart

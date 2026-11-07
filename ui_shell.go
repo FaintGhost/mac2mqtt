@@ -207,16 +207,22 @@ func (a *app) page(c *ui.Context, t *ui.Theme, p palette, title string, bottomRo
 	// the app's icon there, not up among the traffic lights.
 	headerTop := brandCenter(c) - headerHeight/2
 	// Content scrolls below the header, not under it, and fades out at the
-	// scroll's top edge: nothing covers the canvas's light behind the
-	// header, so it shows it as the rest of the window does.
+	// scroll's top edge, where content at rest does not reach: nothing
+	// covers the canvas's light behind the header, so it shows it as the
+	// rest of the window does.
 	const fade = 18
 	scrollTop := headerTop + headerHeight - fade + 6
 	// A scroll of each page's own: one page's place is not another's.
 	c.Key(a.tab)
-	ui.Scroll(c).Absolute().Top(scrollTop).Left(0).Right(0).Bottom(0).
+	scroll := ui.Scroll(c).Absolute().Top(scrollTop).Left(0).Right(0).Bottom(0).
 		Padding(fade, 24, 24+bottomRoom, 16).Gap(20).ScrollbarInsets(fade, 2, bottomRoom, 0).
 		Children(content)
-	a.scrollEdge(c, t, p, scrollTop, fade)
+	if h := a.windowSize.H - scrollTop; h > fade {
+		black := ui.RGB(0, 0, 0)
+		scroll.MaskLinearGradient(ui.LinearGradient{Angle: 180, Stops: []ui.GradientStop{
+			{Color: ui.Transparent, At: 0}, {Color: black, At: fade / h},
+		}})
+	}
 	// Above the header, the window drags as the title bar does.
 	ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(headerTop).DragWindow()
 	ui.Row(c).Absolute().Top(headerTop).Left(0).Right(0).Height(headerHeight).Padding(0, 20, 0, 16).Gap(8).AlignItems(ui.Center).
@@ -226,28 +232,6 @@ func (a *app) page(c *ui.Context, t *ui.Theme, p palette, title string, bottomRo
 			actions()
 		}
 	})
-}
-
-// scrollEdge fades what scrolls out at the top edge of a page's scroll, from
-// gone to whole over fade DIPs, where content at rest does not reach. ui has
-// no mask to fade content by, so it lays the backdrop over it again, a line
-// at a time, each less opaque than the last: the backdrop's light included,
-// it meets the window's unseen.
-func (a *app) scrollEdge(c *ui.Context, t *ui.Theme, p palette, top float32, fade int) {
-	size := a.windowSize
-	if size.W == 0 || size.H == 0 {
-		return // the first frame, before the window's size is known
-	}
-	left := float32(sidebarWidth + sidebarInset)
-	for i := range fade {
-		y := top + float32(i)
-		ui.Box(c).Absolute().Top(y).Left(0).Right(0).Height(1).Clip().PassThrough().
-			Opacity(1 - (float32(i)+0.5)/float32(fade)).Children(func() {
-			ui.Box(c).Absolute().Left(-left).Top(-y).Width(size.W).Height(size.H).PassThrough().Children(func() {
-				backdrop(c, t, p)
-			})
-		})
-	}
 }
 
 // glassButton is a capsule of glass holding an icon and a label, the

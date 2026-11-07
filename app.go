@@ -313,17 +313,14 @@ func (a *app) trayMenu() *mygo.Menu {
 	// The status and what plays read as items, not grayed out, and open
 	// the window, where they show in full.
 	open := func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }
-	status := st.label
+	// Each reads on two lines: the state, and what it is of.
+	broker := ""
 	if configured {
-		status += " · " + a.cfg.BrokerAddress()
+		broker = a.cfg.BrokerAddress()
 	}
-	items := []*mygo.MenuItem{{Label: status, Icon: a.statusDot(st.color), Click: open}}
+	items := []*mygo.MenuItem{{Label: st.label, Subtitle: broker, Icon: a.statusDot(st.color), Click: open}}
 	if m := a.latest.Media; m != nil {
-		label := m.Title
-		if m.Artist != "" {
-			label += " — " + m.Artist
-		}
-		items = append(items, &mygo.MenuItem{Label: truncate(label, 48), Icon: a.menuIcon(iconMusic), Click: open})
+		items = append(items, &mygo.MenuItem{Label: truncate(m.Title, 40), Subtitle: truncate(m.Artist, 40), Icon: a.menuIcon(iconMusic), Click: open})
 	}
 	// Every item has an icon, so that the labels line up in one column.
 	update := updater.MenuItem()

@@ -1,9 +1,12 @@
 package main
 
 import (
+	"math"
 	"reflect"
+	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/i18n"
 	"github.com/egoist/mygo/plugins/updater"
 	"github.com/egoist/mygo/ui"
 
@@ -130,7 +133,7 @@ func (a *app) updatesSection(c *ui.Context, t *ui.Theme, p palette) {
 		})
 		last := locales.NeverChecked()
 		if !a.lastUpdateCheck.IsZero() {
-			last = locales.LastChecked(a.lastUpdateCheck.Local().Format("2006-01-02 15:04"))
+			last = locales.LastChecked(sinceText(a.lastUpdateCheck, time.Now()))
 		}
 		check := locales.CheckForUpdates()
 		if a.availableUpdate != "" {
@@ -204,4 +207,20 @@ func (a *app) changeLanguage(tag string) {
 
 func openLoginItems() {
 	mygo.Shell.OpenExternal("x-apple.systempreferences:com.apple.LoginItems-Settings.extension")
+}
+
+// sinceText writes how long ago then was, in the app's language: "now",
+// "5 minutes ago", "yesterday", "3 days ago".
+func sinceText(then, now time.Time) string {
+	d := now.Sub(then)
+	value, unit := -d.Minutes(), i18n.RelativeMinute
+	switch {
+	case d < time.Minute:
+		value, unit = 0, i18n.RelativeSecond
+	case d >= 48*time.Hour:
+		value, unit = -d.Hours()/24, i18n.RelativeDay
+	case d >= time.Hour:
+		value, unit = -d.Hours(), i18n.RelativeHour
+	}
+	return i18n.FormatRelativeTime(i18n.Locale(), math.Trunc(value), unit, i18n.RelativeTimeOptions{Auto: true})
 }
