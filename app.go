@@ -624,6 +624,12 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 	a.svcMu.Unlock()
 
 	go func() {
+		// Out of sight in the menu bar, the Mac would put the app into App
+		// Nap within a minute, which coalesces its timers: reports would
+		// come late. It keeps running while it reports, the Mac still free
+		// to sleep. Released after done, which quitting waits for on the
+		// main thread.
+		defer mygo.Power.KeepRunning("Reporting to Home Assistant")()
 		defer close(run.done)
 		mgr.Run(ctx)
 	}()

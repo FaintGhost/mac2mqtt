@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.9
+
+- Reports keep their interval while the window is closed: macOS no longer
+  puts the app into App Nap while it reports, and the Mac still sleeps
+  when idle.
+- Checking for updates asks again when the server fails for a moment.
+
 ## 0.4.8
 
 - The menu bar's menu shows the connection's state over the broker's
