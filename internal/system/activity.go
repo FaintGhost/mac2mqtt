@@ -8,6 +8,9 @@ type Activity struct {
 	CameraInUse     bool
 	MicrophoneInUse bool
 	DisplayAsleep   bool
+	// Displays is how many displays are connected, built in or not;
+	// macOS's placeholder for none does not count.
+	Displays int
 	// HasCamera and HasMicrophone tell whether the Mac has any camera and
 	// any audio input at all, built in or plugged in: a Mac mini has
 	// neither until one is connected.

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Home Assistant knows at once when the Mac goes to sleep: it says it is
+  offline as it sleeps, and online again as it wakes, rather than after
+  the broker gives up on it.
+- A Displays sensor counts the displays connected, so that one switched
+  off at the plug tells from one asleep; the Display tile says which, and
+  how many are connected.
+
 ## 0.4.10
 
 - A calmer window: the light behind the glass is blues of one family,

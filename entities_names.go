@@ -13,6 +13,7 @@ func entityNames() map[string]string {
 		"screen_lock":          locales.EntityScreenLock(),
 		"idle_time":            locales.EntityIdleTime(),
 		"display":              locales.EntityDisplay(),
+		"displays":             locales.EntityDisplays(),
 		"lock_screen":          locales.EntityLockScreen(),
 		"display_sleep":        locales.EntityDisplaySleep(),
 		"display_wake":         locales.EntityDisplayWake(),

@@ -215,8 +215,8 @@ func TestManagerPublishesDiscoveryStateAndAvailability(t *testing.T) {
 			}
 		}
 	}
-	if discovery != 27 {
-		t.Errorf("discovery entities = %d, want 27", discovery)
+	if discovery != 28 {
+		t.Errorf("discovery entities = %d, want 28", discovery)
 	}
 	var got system.Snapshot
 	if err := json.Unmarshal(state.body, &got); err != nil {
@@ -1023,4 +1023,48 @@ func TestConnectingACameraPublishesItsEntity(t *testing.T) {
 		}
 		return false
 	})
+}
+
+func TestManagerSaysOfflineAsTheMacSleepsAndOnlineAsItWakes(t *testing.T) {
+	fake := newFakeClient()
+	m := New(Options{
+		Config:    testConfig(),
+		Version:   "0.1.0",
+		Snapshot:  func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient: func(broker.Config) broker.Client { return fake },
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go m.Run(ctx)
+	waitFor(t, func() bool { return m.Status().Phase == PhaseOnline && m.Status().Published > 0 })
+
+	// The wait is a guard against a hang: Suspend returns once it is said.
+	m.Suspend(time.Minute)
+	availability := func() []string {
+		var out []string
+		for _, msg := range fake.messages() {
+			if msg.topic == "mac2mqtt/test/availability" {
+				out = append(out, string(msg.body))
+			}
+		}
+		return out
+	}
+	if got := availability(); got[len(got)-1] != "offline" {
+		t.Fatalf("availability after Suspend = %q, want offline last", got)
+	}
+	if fake.disconnectCount() != 0 {
+		t.Fatal("Suspend dropped the connection")
+	}
+
+	// Waking publishes the state, which says the Mac is back first.
+	before := len(fake.messages())
+	m.PublishNow()
+	waitFor(t, func() bool {
+		msgs := fake.messages()
+		return len(msgs) >= before+2 && msgs[len(msgs)-1].topic == "mac2mqtt/test/state"
+	})
+	msgs := fake.messages()
+	if back := msgs[before]; back.topic != "mac2mqtt/test/availability" || string(back.body) != "online" {
+		t.Errorf("first message on waking = %s %q, want availability online", back.topic, back.body)
+	}
 }

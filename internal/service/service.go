@@ -110,6 +110,13 @@ type Manager struct {
 	// rediscover asks the connection's loop to publish discovery again, as
 	// Home Assistant asks when it starts.
 	rediscover chan struct{}
+	// suspend asks the connection's loop to say the Mac is going offline,
+	// as it goes to sleep, closing the channel it sends once it did.
+	suspend chan chan struct{}
+	// wentOffline is set once the Mac said it went offline while still
+	// connected: the next state it publishes says it is back first.
+	// Guarded by publishMu.
+	wentOffline bool
 	// discovered is a digest of the discovery last published, which a
 	// reconnect does not publish again: the broker retains it. Owned by the
 	// goroutine running Run.
@@ -141,9 +148,32 @@ func New(opts Options) *Manager {
 		mediaRefresh: make(chan struct{}, 1),
 		retry:        make(chan struct{}, 1),
 		rediscover:   make(chan struct{}, 1),
+		suspend:      make(chan chan struct{}),
 	}
 	m.status = Status{Phase: PhaseIdle, Broker: opts.Config.BrokerAddress()}
 	return m
+}
+
+// Suspend says the Mac is going offline, as it goes to sleep, rather than
+// leaving Home Assistant to notice once the broker gives up on it. It
+// waits until it is said, or timeout. The connection stays: the state the
+// Mac publishes next, as it wakes, says it is back.
+func (m *Manager) Suspend(timeout time.Duration) {
+	if m.Status().Phase != PhaseOnline {
+		return
+	}
+	done := make(chan struct{})
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case m.suspend <- done:
+	case <-timer.C:
+		return
+	}
+	select {
+	case <-done:
+	case <-timer.C:
+	}
 }
 
 // Status returns the latest connection status.
@@ -299,6 +329,12 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 			}
 		case <-m.publish:
 			report(m.publishState(ctx, client))
+		case done := <-m.suspend:
+			m.publishOffline(client)
+			m.publishMu.Lock()
+			m.wentOffline = true
+			m.publishMu.Unlock()
+			close(done)
 		case <-m.rediscover:
 			// Home Assistant started, and lost what it knew; once is enough
 			// for the burst of births a restart may send.
@@ -791,6 +827,15 @@ func (m *Manager) publishState(ctx context.Context, client broker.Client) error 
 	m.publishMu.Lock()
 	defer m.publishMu.Unlock()
 
+	if m.wentOffline {
+		onlineCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		err := client.Publish(onlineCtx, m.opts.Config.AvailabilityTopic(), []byte("online"), true, 1)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("publish availability: %w", err)
+		}
+		m.wentOffline = false
+	}
 	snapshot := m.opts.Snapshot(ctx)
 	m.lastAudio = snapshot.Audio
 	if m.opts.OnState != nil {

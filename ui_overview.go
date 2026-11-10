@@ -366,14 +366,17 @@ func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 		tiles = append(tiles, tileSpec{glyph, tint, a.activityLabel(), a.groupValue(homeassistant.GroupActivity), locales.ActivityDetail()})
 	}
 
-	value, tint = locales.DisplayAwake(), colorTeal
+	value, tint, detail = locales.DisplayAwake(), colorTeal, locales.DisplaysCount(s.Display.Count)
 	switch {
 	case collecting:
-		value = locales.Collecting()
+		value, detail = locales.Collecting(), locales.WaitingSessionState()
+	case s.Display.Count == 0:
+		// Its power cut at the plug: macOS shows on a placeholder.
+		value, tint, detail = locales.DisplayNone(), colorGray, locales.DisplayNoneDetail()
 	case !s.Display.Awake:
 		value, tint = locales.DisplayAsleep(), colorGray
 	}
-	tiles = append(tiles, tileSpec{iconDisplay, tint, locales.MetricDisplay(), value, locales.DisplayDetail()})
+	tiles = append(tiles, tileSpec{iconDisplay, tint, locales.MetricDisplay(), value, detail})
 
 	ui.Column(c).FillWidth().Gap(6).Children(func() {
 		sectionTitle(c, t, iconLaptop, colorBlue, locales.ThisMac())

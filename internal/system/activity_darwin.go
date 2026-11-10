@@ -42,6 +42,7 @@ var (
 	displayIsAsleep func(display uint32) bool
 	displayVendor   func(display uint32) uint32
 	displayModel    func(display uint32) uint32
+	onlineDisplays  func(max uint32, displays *uint32, count *uint32) int32
 )
 
 func loadActivity() {
@@ -59,6 +60,7 @@ func loadActivity() {
 			purego.RegisterLibFunc(&displayIsAsleep, lib, "CGDisplayIsAsleep")
 			purego.RegisterLibFunc(&displayVendor, lib, "CGDisplayVendorNumber")
 			purego.RegisterLibFunc(&displayModel, lib, "CGDisplayModelNumber")
+			purego.RegisterLibFunc(&onlineDisplays, lib, "CGGetOnlineDisplayList")
 		}
 	})
 }
@@ -91,6 +93,15 @@ func readActivity() Activity {
 	if displayIsAsleep != nil {
 		main := mainDisplayID()
 		a.DisplayAsleep = displayIsAsleep(main) || isPlaceholderDisplay(displayVendor(main), displayModel(main))
+		var ids [16]uint32
+		var n uint32
+		if onlineDisplays(uint32(len(ids)), &ids[0], &n) == 0 {
+			for _, id := range ids[:min(n, uint32(len(ids)))] {
+				if !isPlaceholderDisplay(displayVendor(id), displayModel(id)) {
+					a.Displays++
+				}
+			}
+		}
 	}
 	return a
 }

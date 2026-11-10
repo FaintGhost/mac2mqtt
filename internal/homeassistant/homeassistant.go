@@ -105,6 +105,7 @@ const (
 	stateUnlocked   = "{% if value_json.session is defined and value_json.session.locked is defined and value_json.session.locked is not none %}{{ 'OFF' if value_json.session.locked else 'ON' }}{% else %}unknown{% endif %}"
 	stateCamera     = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.camera_in_use else 'OFF' }}{% else %}unknown{% endif %}"
 	stateMicrophone = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.microphone_in_use else 'OFF' }}{% else %}unknown{% endif %}"
+	stateDisplays   = "{% if value_json.display is defined and value_json.display.count is defined %}{{ value_json.display.count }}{% else %}unknown{% endif %}"
 	stateDisplay    = "{% if value_json.display is defined %}{{ 'ON' if value_json.display.awake else 'OFF' }}{% else %}unknown{% endif %}"
 	stateMuted      = "{% if value_json.audio is defined and value_json.audio.muted is defined and value_json.audio.muted is not none %}{{ 'ON' if value_json.audio.muted else 'OFF' }}{% else %}unknown{% endif %}"
 )
@@ -221,6 +222,13 @@ func allEntities(opts Options) []Entity {
 		state(GroupSession, "binary_sensor", "display", "Display", map[string]any{
 			"value_template": stateDisplay,
 			"icon":           "mdi:monitor",
+		}),
+		// None when a monitor's power is cut: Display is off then too, but
+		// this tells it from one asleep.
+		state(GroupSession, "sensor", "displays", "Displays", map[string]any{
+			"value_template": stateDisplays,
+			"state_class":    "measurement",
+			"icon":           "mdi:monitor-multiple",
 		}),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "lock_screen", "Lock Screen", "LOCK", "mdi:monitor-lock"),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "display_sleep", "Sleep Display", "DISPLAY_SLEEP", "mdi:monitor-off"),

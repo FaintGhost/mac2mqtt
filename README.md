@@ -112,7 +112,7 @@ Assistant.
 |---|---|
 | Network | Network Connectivity (binary sensor) |
 | Power | Power Source; Battery and Charging on laptops |
-| Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons |
+| Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Displays (how many are connected), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons |
 | Camera and Microphone | Camera In Use, Microphone In Use (binary sensors) |
 | Sound | Volume (number), Mute (switch) |
 | Now Playing | Media State, Now Playing (title, with artist, album, app and timing as attributes), Play/Pause, Next Track and Previous Track buttons, Media player |
@@ -181,7 +181,7 @@ Discovery documents go to `<prefix>/<component>/<node-id>/<object-id>/config`.
   "power": { "on_battery": false, "source": "AC" },
   "session": { "locked": false, "idle_seconds": 12 },
   "activity": { "camera_in_use": false, "microphone_in_use": true },
-  "display": { "awake": true },
+  "display": { "awake": true, "count": 1 },
   "audio": { "volume": 35, "muted": false },
   "media": {
     "state": "playing",

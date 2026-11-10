@@ -121,7 +121,7 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 			HasCamera:       activity.HasCamera,
 			HasMicrophone:   activity.HasMicrophone,
 		},
-		Display: DisplayInfo{Awake: !activity.DisplayAsleep},
+		Display: DisplayInfo{Awake: !activity.DisplayAsleep, Count: activity.Displays},
 		Audio:   audio,
 		Media:   media,
 	}

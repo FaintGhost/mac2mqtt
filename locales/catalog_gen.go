@@ -1880,6 +1880,36 @@ func (msgs Messages) DisplayAwake() string {
 	return Catalog.Format(msgs.locale, "displayAwake", nil)
 }
 
+// DisplayNone says "No display"
+// in the language the app shows.
+func DisplayNone() string { return In(i18n.Locale()).DisplayNone() }
+
+// DisplayNone says "No display"
+// in the language of msgs.
+func (msgs Messages) DisplayNone() string {
+	return Catalog.Format(msgs.locale, "displayNone", nil)
+}
+
+// DisplayNoneDetail says "Off at the plug, or unplugged"
+// in the language the app shows.
+func DisplayNoneDetail() string { return In(i18n.Locale()).DisplayNoneDetail() }
+
+// DisplayNoneDetail says "Off at the plug, or unplugged"
+// in the language of msgs.
+func (msgs Messages) DisplayNoneDetail() string {
+	return Catalog.Format(msgs.locale, "displayNoneDetail", nil)
+}
+
+// DisplaysCount says "{n, plural, one {# display} other {# displays}}"
+// in the language the app shows.
+func DisplaysCount(n int) string { return In(i18n.Locale()).DisplaysCount(n) }
+
+// DisplaysCount says "{n, plural, one {# display} other {# displays}}"
+// in the language of msgs.
+func (msgs Messages) DisplaysCount(n int) string {
+	return Catalog.Format(msgs.locale, "displaysCount", map[string]any{"n": n})
+}
+
 // DisplayAsleep says "Asleep"
 // in the language the app shows.
 func DisplayAsleep() string { return In(i18n.Locale()).DisplayAsleep() }
@@ -1888,16 +1918,6 @@ func DisplayAsleep() string { return In(i18n.Locale()).DisplayAsleep() }
 // in the language of msgs.
 func (msgs Messages) DisplayAsleep() string {
 	return Catalog.Format(msgs.locale, "displayAsleep", nil)
-}
-
-// DisplayDetail says "Sleep and wake in HA"
-// in the language the app shows.
-func DisplayDetail() string { return In(i18n.Locale()).DisplayDetail() }
-
-// DisplayDetail says "Sleep and wake in HA"
-// in the language of msgs.
-func (msgs Messages) DisplayDetail() string {
-	return Catalog.Format(msgs.locale, "displayDetail", nil)
 }
 
 // CameraInUse says "Camera in use"
@@ -2148,6 +2168,16 @@ func EntityIdleTime() string { return In(i18n.Locale()).EntityIdleTime() }
 // in the language of msgs.
 func (msgs Messages) EntityIdleTime() string {
 	return Catalog.Format(msgs.locale, "entityIdleTime", nil)
+}
+
+// EntityDisplays says "Displays"
+// in the language the app shows.
+func EntityDisplays() string { return In(i18n.Locale()).EntityDisplays() }
+
+// EntityDisplays says "Displays"
+// in the language of msgs.
+func (msgs Messages) EntityDisplays() string {
+	return Catalog.Format(msgs.locale, "entityDisplays", nil)
 }
 
 // EntityDisplay says "Display"

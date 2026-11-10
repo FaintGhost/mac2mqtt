@@ -459,6 +459,18 @@ func (a *app) registerLifecycle() {
 		a.refreshSnapshot()
 		a.publishNow()
 	})
+	// Going to sleep, the Mac says so at once, rather than leaving Home
+	// Assistant to notice once the broker gives up on it; macOS waits for
+	// this before it sleeps. The state published next, as it wakes or as
+	// the next report comes, says it is back.
+	mygo.Power.OnSuspend(func() {
+		a.svcMu.Lock()
+		svc := a.svc
+		a.svcMu.Unlock()
+		if svc != nil {
+			svc.Suspend(2 * time.Second)
+		}
+	})
 	// Waking and a network coming back reconnect at once, rather than
 	// after the backoff the dropped connection was waiting out.
 	mygo.Power.OnResume(func() {

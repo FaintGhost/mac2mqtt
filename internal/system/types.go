@@ -71,9 +71,11 @@ type ActivityInfo struct {
 	HasMicrophone   bool `json:"has_microphone"`
 }
 
-// DisplayInfo tells whether the display is awake.
+// DisplayInfo tells whether the display is awake, and how many are
+// connected.
 type DisplayInfo struct {
 	Awake bool `json:"awake"`
+	Count int  `json:"count"`
 }
 
 // Snapshot is one point-in-time report of system status.
