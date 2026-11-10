@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.11
 
 - The welcome finds the broker on your network: Home Assistant's host,
   where its Mosquitto add-on listens, and brokers that announce
