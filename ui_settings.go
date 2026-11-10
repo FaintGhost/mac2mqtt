@@ -27,8 +27,11 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 				}
 			})
 			if a.loginNeedsApproval {
-				row(c, t, locales.LoginItemsApproval(), "", func() {
-					ui.Button(c, locales.OpenLoginItems()).OnClick(openLoginItems)
+				c.Key("login-approval")
+				ui.Column(c).FillWidth().Transition(rowCollapse).Children(func() {
+					row(c, t, locales.LoginItemsApproval(), "", func() {
+						ui.Button(c, locales.OpenLoginItems()).OnClick(openLoginItems)
+					})
 				})
 			}
 		})
@@ -81,8 +84,11 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 				ui.Switch(c, &a.draft.Reporting.Retain).Label(locales.RetainStateLabel())
 			})
 			if a.draft.Broker.TLS {
-				row(c, t, locales.SkipVerifyLabel(), locales.SkipVerifyHelp(), func() {
-					ui.Switch(c, &a.draft.Broker.InsecureSkipVerify).Label(locales.SkipVerifyLabel())
+				c.Key("skip-verify")
+				ui.Column(c).FillWidth().Transition(rowCollapse).Children(func() {
+					row(c, t, locales.SkipVerifyLabel(), locales.SkipVerifyHelp(), func() {
+						ui.Switch(c, &a.draft.Broker.InsecureSkipVerify).Label(locales.SkipVerifyLabel())
+					})
 				})
 			}
 			ui.Row(c).FillWidth().Padding(10, 14).Gap(8).Children(func() {
@@ -101,7 +107,7 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 		if a.settingsError != "" {
 			note, color = a.settingsError, t.Danger
 		}
-		ui.Text(c, note).FontSize(11).TextColor(color).Wrap().Padding(0, 12)
+		ui.Text(c, note).FontSize(11).TextColor(color).Wrap().Padding(0, 12).ContentTransition(crossfade)
 	})
 	a.autosave()
 }
@@ -217,7 +223,7 @@ func sinceText(then, now time.Time) string {
 	switch {
 	case d < time.Minute:
 		value, unit = 0, i18n.RelativeSecond
-	case d >= 48*time.Hour:
+	case d >= 24*time.Hour:
 		value, unit = -d.Hours()/24, i18n.RelativeDay
 	case d >= time.Hour:
 		value, unit = -d.Hours(), i18n.RelativeHour

@@ -18,8 +18,10 @@ func TestSinceText(t *testing.T) {
 		{"en", 20 * time.Second, "now"},
 		{"en", 5 * time.Minute, "5 minutes ago"},
 		{"en", 3*time.Hour + 40*time.Minute, "3 hours ago"},
+		{"en", 30 * time.Hour, "yesterday"},
 		{"en", 50 * time.Hour, "2 days ago"},
 		{"zh-Hans", 5 * time.Minute, "5分钟前"},
+		{"zh-Hans", 30 * time.Hour, "昨天"},
 	} {
 		i18n.SetLocaleFunc(func() string { return tc.locale })
 		if got := sinceText(now.Add(-tc.ago), now); got != tc.want {

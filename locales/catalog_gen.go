@@ -256,21 +256,21 @@ func (msgs Messages) StepDiscoveryBody() string {
 	return Catalog.Format(msgs.locale, "stepDiscoveryBody", nil)
 }
 
-// StepSaveTitle says "Save"
+// StepSaveTitle says "Check Home Assistant"
 // in the language the app shows.
 func StepSaveTitle() string { return In(i18n.Locale()).StepSaveTitle() }
 
-// StepSaveTitle says "Save"
+// StepSaveTitle says "Check Home Assistant"
 // in the language of msgs.
 func (msgs Messages) StepSaveTitle() string {
 	return Catalog.Format(msgs.locale, "stepSaveTitle", nil)
 }
 
-// StepSaveBody says "Entities appear in Home Assistant"
+// StepSaveBody says "Settings save as you go; the device and its entities appear on their own"
 // in the language the app shows.
 func StepSaveBody() string { return In(i18n.Locale()).StepSaveBody() }
 
-// StepSaveBody says "Entities appear in Home Assistant"
+// StepSaveBody says "Settings save as you go; the device and its entities appear on their own"
 // in the language of msgs.
 func (msgs Messages) StepSaveBody() string {
 	return Catalog.Format(msgs.locale, "stepSaveBody", nil)
@@ -1008,11 +1008,11 @@ func (msgs Messages) LanguageTraditionalChinese() string {
 	return Catalog.Format(msgs.locale, "languageTraditionalChinese", nil)
 }
 
-// AboutBody says "Reports this Mac's state to Home Assistant over MQTT discovery, with availability, automatic reconnect, and volume, m…"
+// AboutBody says "Reports this Mac to Home Assistant over MQTT discovery: network, power, screen and display, sound and Now Playing, wi…"
 // in the language the app shows.
 func AboutBody() string { return In(i18n.Locale()).AboutBody() }
 
-// AboutBody says "Reports this Mac's state to Home Assistant over MQTT discovery, with availability, automatic reconnect, and volume, m…"
+// AboutBody says "Reports this Mac to Home Assistant over MQTT discovery: network, power, screen and display, sound and Now Playing, wi…"
 // in the language of msgs.
 func (msgs Messages) AboutBody() string {
 	return Catalog.Format(msgs.locale, "aboutBody", nil)
@@ -1890,11 +1890,11 @@ func (msgs Messages) DisplayAsleep() string {
 	return Catalog.Format(msgs.locale, "displayAsleep", nil)
 }
 
-// DisplayDetail says "Home Assistant can lock, sleep and wake it"
+// DisplayDetail says "Sleep and wake in HA"
 // in the language the app shows.
 func DisplayDetail() string { return In(i18n.Locale()).DisplayDetail() }
 
-// DisplayDetail says "Home Assistant can lock, sleep and wake it"
+// DisplayDetail says "Sleep and wake in HA"
 // in the language of msgs.
 func (msgs Messages) DisplayDetail() string {
 	return Catalog.Format(msgs.locale, "displayDetail", nil)

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.10
+
+- A calmer window: the light behind the glass is blues of one family,
+  the accent's, rather than blue, teal and pink.
+- Motion: the sidebar's selection slides to the page chosen, and the
+  page rises in; numbers roll to their new values, states and icons fade
+  across, and rows that come and go open and close. With Reduce Motion
+  on, things fade in place.
+- The first launch opens on a welcome that explains the setup and leads
+  to the broker's settings, rather than on Settings.
+- Settings says "yesterday" for an update check a day ago, not "30 hours
+  ago".
+- Clearer text: the welcome's last step says settings save on their own,
+  About lists what the app reports, and Display's tile no longer cuts off.
+- Updates download only what changed since the installed version, when
+  it is one of the last 3: usually a small part of the whole app.
+
 ## 0.4.9
 
 - Reports keep their interval while the window is closed: macOS no longer

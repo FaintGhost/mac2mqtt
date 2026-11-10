@@ -151,13 +151,16 @@ func (a *app) navItem(c *ui.Context, t *ui.Theme, p palette, glyph *ui.SVG, labe
 	c.Key(tab)
 	item := ui.ButtonBase(c).FillWidth().Padding(6, 8).Radius(itemRadius).Gap(9).AlignItems(ui.Center).Justify(ui.Start).
 		Label(label).TextColor(t.Text)
-	if selected {
-		item.Background(p.selection)
-	} else if item.Hovered() {
+	if !selected && item.Hovered() {
 		item.Background(p.fill)
 	}
-	item.Children(func() {
-		mark := ui.Icon(c, glyph).FontSize(15)
+	item.Transition(colorChange).Children(func() {
+		if selected {
+			// One selection, which slides from the item chosen before.
+			ui.Box(c).Absolute().Left(0).Top(0).Right(0).Bottom(0).Radius(itemRadius).
+				Background(p.selection).PassThrough().Transition(navSelection)
+		}
+		mark := ui.Icon(c, glyph).FontSize(15).ContentTransition(crossfade)
 		if selected {
 			mark.TextColor(t.Accent)
 		} else {
@@ -216,7 +219,7 @@ func (a *app) page(c *ui.Context, t *ui.Theme, p palette, title string, bottomRo
 	c.Key(a.tab)
 	scroll := ui.Scroll(c).Absolute().Top(scrollTop).Left(0).Right(0).Bottom(0).
 		Padding(fade, 24, 24+bottomRoom, 16).Gap(20).ScrollbarInsets(fade, 2, bottomRoom, 0).
-		Children(content)
+		Transition(pageEnter).Children(content)
 	if h := a.windowSize.H - scrollTop; h > fade {
 		black := ui.RGB(0, 0, 0)
 		scroll.MaskLinearGradient(ui.LinearGradient{Angle: 180, Stops: []ui.GradientStop{
@@ -227,9 +230,9 @@ func (a *app) page(c *ui.Context, t *ui.Theme, p palette, title string, bottomRo
 	ui.Box(c).Absolute().Top(0).Left(0).Right(0).Height(headerTop).DragWindow()
 	ui.Row(c).Absolute().Top(headerTop).Left(0).Right(0).Height(headerHeight).Padding(0, 20, 0, 16).Gap(8).AlignItems(ui.Center).
 		DragWindow().Children(func() {
-		ui.Text(c, title).FontSize(20).FontWeight(700).Grow(1).SingleLine()
+		ui.Text(c, title).FontSize(20).FontWeight(700).Grow(1).SingleLine().ContentTransition(crossfade)
 		if actions != nil {
-			actions()
+			ui.Row(c).Key("actions").Gap(8).AlignItems(ui.Center).Transition(appear).Children(actions)
 		}
 	})
 }
@@ -277,9 +280,9 @@ func backdrop(c *ui.Context, t *ui.Theme, p palette) {
 	ambient(c, t)
 }
 
-// ambient lays soft light of the badges' colors on the canvas behind the
-// pages, for their glass to bend: without color under it, glass on a flat
-// canvas shows nothing of itself.
+// ambient lays soft blue light on the canvas behind the pages, for their
+// glass to bend: without color under it, glass on a flat canvas shows
+// nothing of itself.
 func ambient(c *ui.Context, t *ui.Theme) {
 	strength := float32(0.20)
 	if t.Dark {
@@ -291,9 +294,10 @@ func ambient(c *ui.Context, t *ui.Theme) {
 			Center: ui.Point{X: x, Y: y}, Radius: radius, Oklab: true,
 		})
 	}
-	glow(colorBlue, 0.85, 0.18, 360)
-	glow(colorTeal, 0.12, 0.42, 320)
-	glow(colorPink, 0.65, 0.78, 340)
+	// Blues of one family, the accent's: light from the top right, and a
+	// deeper indigo low on the left.
+	glow(ui.Hex("#3d7bf2"), 0.85, 0.12, 420)
+	glow(ui.Hex("#5a62e0"), 0.15, 0.90, 400)
 }
 
 // glassCard is a card of glass over the canvas's light, for what heads a
@@ -354,7 +358,7 @@ func valueRow(c *ui.Context, t *ui.Theme, title, value string, mono bool) {
 // badge is an icon on a flat rounded square, as System Settings marks its
 // rows; solid fills it with the tint and draws the icon white.
 func badge(c *ui.Context, glyph *ui.SVG, tint ui.Color, size float32, solid bool) {
-	b := ui.Box(c).Size(size, size).Radius(size * 0.26).Center()
+	b := ui.Box(c).Size(size, size).Radius(size * 0.26).Center().Transition(colorChange)
 	color := tint
 	if solid {
 		b.Background(tint)
@@ -363,7 +367,7 @@ func badge(c *ui.Context, glyph *ui.SVG, tint ui.Color, size float32, solid bool
 		b.Background(tint.Alpha(0.15))
 	}
 	b.Children(func() {
-		ui.Icon(c, glyph).FontSize(size * 0.55).TextColor(color)
+		ui.Icon(c, glyph).FontSize(size * 0.55).TextColor(color).ContentTransition(crossfade)
 	})
 }
 

@@ -77,8 +77,8 @@ func (a *app) statusCard(c *ui.Context, t *ui.Theme, p palette) {
 		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
 			badge(c, st.glyph, st.color, 40, true)
 			ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(3).Children(func() {
-				ui.Text(c, st.headline).FontSize(15).FontWeight(650).Wrap()
-				ui.Text(c, st.detail).FontSize(12).TextColor(t.TextMuted).Wrap()
+				ui.Text(c, st.headline).FontSize(15).FontWeight(650).Wrap().ContentTransition(crossfade)
+				ui.Text(c, st.detail).FontSize(12).TextColor(t.TextMuted).Wrap().ContentTransition(crossfade)
 			})
 			switch {
 			case st.action != nil:
@@ -86,7 +86,9 @@ func (a *app) statusCard(c *ui.Context, t *ui.Theme, p palette) {
 			case a.cfg.Reporting.Enabled == false:
 				ui.Button(c, locales.OpenSettings()).OnClick(func() { a.tab = tabSettings })
 			case st.phase == service.PhaseOnline && st.color == colorGreen:
-				pill(c, locales.Live(), p.positive, p.positiveBg, true)
+				ui.Box(c).Key("live").Transition(appear).Children(func() {
+					pill(c, locales.Live(), p.positive, p.positiveBg, true)
+				})
 			}
 		})
 		if a.cfg.Reporting.Enabled {
@@ -107,7 +109,7 @@ func (a *app) statusCard(c *ui.Context, t *ui.Theme, p palette) {
 func statusFact(c *ui.Context, t *ui.Theme, label, value string) {
 	ui.Column(c).Grow(1).Basis(0).Gap(2).Padding(0, 12).Children(func() {
 		ui.Text(c, label).FontSize(11).TextColor(t.TextMuted).SingleLine()
-		ui.Text(c, value).FontSize(14).FontWeight(600).FontFeatures("tnum").SingleLine()
+		ui.Text(c, value).FontSize(14).FontWeight(600).FontFeatures("tnum").SingleLine().ContentTransition(rolling)
 	})
 }
 
@@ -279,7 +281,7 @@ func (a *app) mediaControls(c *ui.Context, t *ui.Theme, p palette, media *system
 		default:
 			b.TextColor(t.Text)
 		}
-		b.Children(func() { ui.Icon(c, glyph).FontSize(size * 0.42) })
+		b.Children(func() { ui.Icon(c, glyph).FontSize(size * 0.42).ContentTransition(crossfade) })
 		b.OnClick(func() { a.mediaControl(command) })
 	}
 	// The controls on a capsule of glass, as Control Center's.
@@ -378,6 +380,8 @@ func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 		// Three equal columns: a last tile alone keeps a column's width.
 		ui.Grid(c).Columns(3).Gap(10).FillWidth().Children(func() {
 			for _, spec := range tiles {
+				// Keyed by name: the camera's tile comes and goes among them.
+				c.Key(spec.label)
 				tile(c, t, p, spec.glyph, spec.tint, spec.label, spec.value, spec.detail)
 			}
 		})
@@ -410,8 +414,8 @@ func tile(c *ui.Context, t *ui.Theme, p palette, glyph *ui.SVG, tint ui.Color, l
 			ui.Text(c, label).FontSize(12).TextColor(t.TextMuted).SingleLine().Ellipsis("…").Shrink(1).MinWidth(0)
 		})
 		ui.Column(c).Gap(1).Children(func() {
-			ui.Text(c, value).FontSize(17).FontWeight(650).SingleLine().Ellipsis("…")
-			ui.Text(c, detail).FontSize(11).TextColor(t.TextMuted).SingleLine().Ellipsis("…")
+			ui.Text(c, value).FontSize(17).FontWeight(650).SingleLine().Ellipsis("…").ContentTransition(crossfade)
+			ui.Text(c, detail).FontSize(11).TextColor(t.TextMuted).SingleLine().Ellipsis("…").ContentTransition(crossfade)
 		})
 	})
 }

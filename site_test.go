@@ -50,6 +50,7 @@ func TestSiteAssets(t *testing.T) {
 			}
 		}
 	}
+	writePNG(t, filepath.Join("site", "assets", "og.png"), renderOG())
 	// The icons, from resources/icon.png's design.
 	for name, size := range map[string]int{"icon.png": 1024, "apple-touch-icon.png": 180, "favicon.png": 64} {
 		writePNG(t, filepath.Join("site", "assets", name), renderIcon(size))
@@ -122,4 +123,38 @@ func writePNG(t *testing.T, path string, img image.Image) {
 	if err := png.Encode(f, img); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// renderOG draws the picture links to the website show, 1200 by 630: what
+// the app is, beside its window, as flat as the website.
+func renderOG() *image.RGBA {
+	i18n.SetLocaleFunc(func() string { return "en" })
+	a := siteApp()
+	tt := ui.NewTester(func(c *ui.Context) {
+		a.view(c)
+		trafficLights(c)
+	}, 820, 600)
+	tt.SetScale(2)
+	tt.SetTitleBar(ui.TitleBar{Height: 52, Left: 88})
+	tt.Frame()
+	tt.Frame()
+	tt.Advance(time.Second)
+	window := ui.NewBitmap(windowCorners(tt.Image(), 2*windowRadius))
+	ink, muted, line, surface := ui.Hex("#0a0b0d"), ui.Hex("#5f646b"), ui.Hex("#e8e9eb"), ui.Hex("#f7f7f8")
+	return ui.Render(func(c *ui.Context) {
+		c.Root().Background(ui.RGB(255, 255, 255))
+		ui.Column(c).Absolute().Left(72).Top(0).Bottom(0).Width(470).Justify(ui.Center).Gap(22).Children(func() {
+			ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
+				ui.Image(c, appIcon).Size(52, 52)
+				ui.Text(c, "Mac2MQTT").FontSize(30).FontWeight(600).LetterSpacing(-0.4).TextColor(ink)
+			})
+			ui.Text(c, "Your Mac, in Home Assistant.").FontSize(62).FontWeight(650).LineHeight(1.02).
+				LetterSpacing(-2.6).TextColor(ink).Wrap()
+			ui.Text(c, "A native menu bar app that reports your Mac to Home Assistant over MQTT, and lets Home Assistant control it.").
+				FontSize(21).LineHeight(1.45).TextColor(muted).Wrap()
+		})
+		ui.Box(c).Absolute().Left(600).Top(70).Padding(14).Radius(18).Background(surface).Border(1, line).Children(func() {
+			ui.Image(c, window).Size(697, 510)
+		})
+	}, 1200, 630, 1)
 }

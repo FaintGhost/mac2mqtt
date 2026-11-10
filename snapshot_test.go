@@ -54,6 +54,7 @@ func TestSnapshots(t *testing.T) {
 				tt.Scroll(500, 400, 0, 130)
 				tt.Frame()
 			}
+			tt.Advance(time.Second) // past the transitions, at rest
 			name := page.name
 			if dark {
 				name += "-dark"

@@ -52,7 +52,7 @@ func (a *app) entitiesPage(c *ui.Context, t *ui.Theme, p palette) {
 					if !a.publishing[i] {
 						value = locales.GroupOff()
 					}
-					ui.Text(c, value).FontSize(12).TextColor(t.TextMuted).SingleLine().Ellipsis("…").MaxWidth(150)
+					ui.Text(c, value).FontSize(12).TextColor(t.TextMuted).SingleLine().Ellipsis("…").MaxWidth(150).ContentTransition(crossfade)
 					if ui.Switch(c, &a.publishing[i]).Label(g.title()).Changed() {
 						a.setPublishes(g.id, a.publishing[i])
 					}
@@ -90,15 +90,17 @@ func (a *app) entitiesSummary(c *ui.Context, t *ui.Theme, p palette) {
 		ui.Row(c).Gap(12).AlignItems(ui.Center).Children(func() {
 			badge(c, iconEntities, colorBlue, 40, true)
 			ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(3).Children(func() {
-				ui.Text(c, locales.EntitiesSummary(len(a.publishedEntities()))).FontSize(15).FontWeight(650).Wrap()
+				ui.Text(c, locales.EntitiesSummary(len(a.publishedEntities()))).FontSize(15).FontWeight(650).Wrap().ContentTransition(rolling)
 				ui.Text(c, locales.EntitiesSummaryBody()).FontSize(12).TextColor(t.TextMuted).Wrap()
 			})
 			count := func(label string) {
-				ui.Text(c, label).FontSize(11.5).FontWeight(600).TextColor(t.TextMuted).Padding(3, 10).Radius(11).Background(p.fill).SingleLine().Shrink(0)
+				ui.Text(c, label).FontSize(11.5).FontWeight(600).TextColor(t.TextMuted).Padding(3, 10).Radius(11).Background(p.fill).SingleLine().Shrink(0).ContentTransition(rolling)
 			}
+			c.Key("on")
 			count(locales.GroupsOn(on))
 			if off > 0 {
-				count(locales.GroupsOff(off))
+				c.Key("off")
+				ui.Box(c).Transition(appear).Children(func() { count(locales.GroupsOff(off)) })
 			}
 		})
 	})

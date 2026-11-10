@@ -149,10 +149,15 @@ func (a *app) ready() {
 		a.restartService()
 	})
 
-	// The window opens on the first run, to set up; otherwise the app
+	// The window opens on the first run, to set up: on Overview's welcome,
+	// which leads to the broker's settings; on Settings when the
+	// configuration could not be read, which says why. Otherwise the app
 	// starts in the menu bar, with no window to keep in memory.
 	if exists == false || a.cfg.Broker.Host == "" || loadErr != nil {
-		a.tab = tabSettings
+		a.tab = tabOverview
+		if loadErr != nil {
+			a.tab = tabSettings
+		}
 		a.showWindow()
 	}
 	a.captureRuntime()

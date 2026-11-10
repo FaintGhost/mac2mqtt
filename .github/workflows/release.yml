@@ -104,6 +104,11 @@ jobs:
           mv "dist/darwin-universal/mac2mqtt-$VERSION.dmg" "release/Mac2MQTT-$VERSION-universal.dmg"
           # The updates keep the names their manifests point to.
           cp dist/darwin-*/*.tar.gz dist/darwin-*/update-darwin-*.json release/
+          # Delta updates from the last 3 versions: an installed app
+          # downloads what changed rather than the whole archive. The first
+          # build after they were turned on has only the published version
+          # to start from.
+          cp dist/darwin-*/*.delta release/ 2>/dev/null || echo "::warning::no delta updates were made"
           # curl -fsSL .../releases/latest/download/install.sh | sh: installs
           # from the manifests, checking the archive's signature.
           cp dist/darwin-universal/install.sh release/
