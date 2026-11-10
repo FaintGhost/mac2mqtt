@@ -1068,3 +1068,48 @@ func TestManagerSaysOfflineAsTheMacSleepsAndOnlineAsItWakes(t *testing.T) {
 		t.Errorf("first message on waking = %s %q, want availability online", back.topic, back.body)
 	}
 }
+
+func TestManagerOffersAndSetsTheAudioOutput(t *testing.T) {
+	fake := newFakeClient()
+	var mu sync.Mutex
+	var chosen []string
+	m := New(Options{
+		Config:    testConfig(),
+		Version:   "0.1.0",
+		Snapshot:  func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient: func(broker.Config) broker.Client { return fake },
+		Activity: func() system.Activity {
+			return system.Activity{Output: "Speakers", Outputs: "Speakers\nAirPods Pro"}
+		},
+		SetOutput: func(_ context.Context, name string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			chosen = append(chosen, name)
+			return nil
+		},
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go m.Run(ctx)
+	topic := "mac2mqtt/test/output/set"
+	waitFor(t, func() bool { return fake.handler(topic) != nil })
+
+	var config map[string]any
+	for _, msg := range fake.messages() {
+		if strings.Contains(msg.topic, "/audio_output/config") {
+			if err := json.Unmarshal(msg.body, &config); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	if options, _ := config["options"].([]any); len(options) != 2 || options[1] != "AirPods Pro" {
+		t.Errorf("audio output options = %v", config["options"])
+	}
+
+	fake.handler(topic)(broker.Message{Topic: topic, Payload: []byte("AirPods Pro")})
+	waitFor(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return len(chosen) == 1 && chosen[0] == "AirPods Pro"
+	})
+}

@@ -70,3 +70,14 @@ func (c *Controller) SetMuted(ctx context.Context, muted bool) error {
 	}
 	return nil
 }
+
+// SetOutput makes sound play through the output device of that name.
+func (c *Controller) SetOutput(ctx context.Context, name string) error {
+	if c.goos != "darwin" {
+		return ErrUnsupported
+	}
+	if err := setOutput(name); err != nil {
+		return fmt.Errorf("system: set audio output %q: %w", name, err)
+	}
+	return nil
+}

@@ -22,6 +22,7 @@ func entityNames() map[string]string {
 		"microphone_in_use":    locales.EntityMicrophoneInUse(),
 		"volume":               locales.EntityVolume(),
 		"mute":                 locales.EntityMute(),
+		"audio_output":         locales.EntityAudioOutput(),
 		"media_state":          locales.EntityMediaState(),
 		"now_playing":          locales.EntityNowPlaying(),
 		"media_play_pause":     locales.EntityMediaPlayPause(),

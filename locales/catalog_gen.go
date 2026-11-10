@@ -1320,11 +1320,11 @@ func (msgs Messages) GroupAudioTitle() string {
 	return Catalog.Format(msgs.locale, "groupAudioTitle", nil)
 }
 
-// GroupAudioBody says "Volume and mute, which Home Assistant can also set"
+// GroupAudioBody says "Volume, mute and the output, which Home Assistant can also set"
 // in the language the app shows.
 func GroupAudioBody() string { return In(i18n.Locale()).GroupAudioBody() }
 
-// GroupAudioBody says "Volume and mute, which Home Assistant can also set"
+// GroupAudioBody says "Volume, mute and the output, which Home Assistant can also set"
 // in the language of msgs.
 func (msgs Messages) GroupAudioBody() string {
 	return Catalog.Format(msgs.locale, "groupAudioBody", nil)
@@ -2258,6 +2258,16 @@ func EntityVolume() string { return In(i18n.Locale()).EntityVolume() }
 // in the language of msgs.
 func (msgs Messages) EntityVolume() string {
 	return Catalog.Format(msgs.locale, "entityVolume", nil)
+}
+
+// EntityAudioOutput says "Audio Output"
+// in the language the app shows.
+func EntityAudioOutput() string { return In(i18n.Locale()).EntityAudioOutput() }
+
+// EntityAudioOutput says "Audio Output"
+// in the language of msgs.
+func (msgs Messages) EntityAudioOutput() string {
+	return Catalog.Format(msgs.locale, "entityAudioOutput", nil)
 }
 
 // EntityMute says "Mute"

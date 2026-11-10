@@ -161,8 +161,8 @@ func TestDisabledGroupsAreLeftOut(t *testing.T) {
 			t.Errorf("disabled group published %s", entity.ObjectID)
 		}
 	}
-	if n := len(AllEntities(opts)); n != 31 {
-		t.Errorf("all entities = %d, want 31 whatever is disabled", n)
+	if n := len(AllEntities(opts)); n != 32 {
+		t.Errorf("all entities = %d, want 32 whatever is disabled", n)
 	}
 	for _, entity := range AllEntities(opts) {
 		if entity.Group == "" && entity.ObjectID != "refresh" {
@@ -311,4 +311,27 @@ func TestNamesAndEntityIDs(t *testing.T) {
 			t.Error("the media player, another integration's, has a default entity ID")
 		}
 	}
+}
+
+func TestAudioOutputOffersTheOutputs(t *testing.T) {
+	opts := testOptions()
+	for _, entity := range SystemEntities(opts) {
+		if entity.ObjectID == "audio_output" {
+			t.Fatal("an Audio Output select with no outputs to offer")
+		}
+	}
+	opts.Outputs = []string{"MacBook Pro Speakers", "AirPods Pro"}
+	for _, entity := range SystemEntities(opts) {
+		if entity.ObjectID != "audio_output" {
+			continue
+		}
+		if entity.Component != "select" || entity.Config["command_topic"] != "mac2mqtt/studio/output/set" {
+			t.Errorf("audio output = %+v", entity)
+		}
+		if got := entity.Config["options"].([]string); len(got) != 2 || got[1] != "AirPods Pro" {
+			t.Errorf("options = %q", got)
+		}
+		return
+	}
+	t.Error("no Audio Output select")
 }

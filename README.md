@@ -114,7 +114,7 @@ Assistant.
 | Power | Power Source; Battery and Charging on laptops |
 | Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Displays (how many are connected), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons |
 | Camera and Microphone | Camera In Use, Microphone In Use (binary sensors) |
-| Sound | Volume (number), Mute (switch) |
+| Sound | Volume (number), Mute (switch), Audio Output (select) |
 | Now Playing | Media State, Now Playing (title, with artist, album, app and timing as attributes), Play/Pause, Next Track and Previous Track buttons, Media player |
 | Notifications and Speech | Notification, Speak (`notify`) |
 | Shortcuts (off by default) | Run Shortcut (select of your shortcuts) |
@@ -183,6 +183,7 @@ Discovery documents go to `<prefix>/<component>/<node-id>/<object-id>/config`.
   "activity": { "camera_in_use": false, "microphone_in_use": true },
   "display": { "awake": true, "count": 1 },
   "audio": { "volume": 35, "muted": false },
+  "output": "MacBook Pro Speakers",
   "media": {
     "state": "playing",
     "title": "Come Away With Me",

@@ -612,6 +612,7 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 		SetMuted: func(ctx context.Context, muted bool) error {
 			return a.controller.SetMuted(ctx, muted)
 		},
+		SetOutput:     a.controller.SetOutput,
 		Media:         a.collector.Media,
 		MediaCommand:  a.controller.SendMediaCommand,
 		SeekMedia:     a.controller.SeekMedia,

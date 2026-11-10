@@ -334,6 +334,7 @@ func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 	}
 	tiles = append(tiles, tileSpec{glyph, colorGreen, locales.MetricPower(), a.groupValue(homeassistant.GroupPower), detail})
 
+	// Under the volume, where sound goes: muted, and through which output.
 	glyph, detail, value := iconVolume, locales.Unmuted(), locales.AudioUnavailable()
 	if s.Audio == nil {
 		detail = locales.NoOutputDeviceReadable()
@@ -342,6 +343,12 @@ func (a *app) stateTiles(c *ui.Context, t *ui.Theme, p palette) {
 		if s.Audio.Muted {
 			glyph, detail = iconMuted, locales.Muted()
 		}
+	}
+	switch {
+	case s.Output != "" && s.Audio != nil && s.Audio.Muted:
+		detail = locales.Muted() + " · " + s.Output
+	case s.Output != "":
+		detail = s.Output
 	}
 	tiles = append(tiles, tileSpec{glyph, colorPink, locales.MetricVolume(), value, detail})
 

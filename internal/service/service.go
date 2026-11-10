@@ -49,6 +49,8 @@ type Options struct {
 	OnState   func(system.Snapshot)
 	SetVolume func(context.Context, int) error
 	SetMuted  func(context.Context, bool) error
+	// SetOutput makes sound play through the device of that name.
+	SetOutput func(context.Context, string) error
 	Media     func(context.Context) *system.MediaInfo
 	// MediaCommand and SeekMedia control the Now Playing app.
 	MediaCommand func(context.Context, system.MediaCommand) error
@@ -357,11 +359,13 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 			if activity == m.lastActivity {
 				continue
 			}
-			devices := activity.HasCamera != m.lastActivity.HasCamera || activity.HasMicrophone != m.lastActivity.HasMicrophone
+			devices := activity.HasCamera != m.lastActivity.HasCamera || activity.HasMicrophone != m.lastActivity.HasMicrophone ||
+				activity.Outputs != m.lastActivity.Outputs
 			m.lastActivity = activity
 			if devices {
 				// A camera or microphone was connected or removed: its
-				// entity comes or goes.
+				// entity comes or goes. An audio output too: the select
+				// offers it, before the state names it.
 				report(m.publishDiscovery(ctx, client, false))
 			}
 			report(m.publishState(ctx, client))
@@ -553,6 +557,12 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 			break
 		}
 		err = m.opts.SetMuted(commandCtx, muted)
+	case base + "/output/set":
+		if m.opts.SetOutput == nil {
+			err = fmt.Errorf("audio output control is unavailable")
+			break
+		}
+		err = m.opts.SetOutput(commandCtx, payload)
 	case base + "/media/volume/set":
 		// The media player's volume, from 0 to 1.
 		level, parseErr := strconv.ParseFloat(payload, 64)
@@ -905,6 +915,7 @@ func (m *Manager) entityOptions(probe system.Snapshot) homeassistant.Options {
 		// What the Mac has now, as a camera plugged in after launch.
 		HasCamera:     m.lastActivity.HasCamera,
 		HasMicrophone: m.lastActivity.HasMicrophone,
+		Outputs:       m.lastActivity.OutputNames(),
 	}
 }
 

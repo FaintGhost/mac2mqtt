@@ -77,6 +77,7 @@ func siteApp() *app {
 	a.latest.LastSeen = when
 	a.latest.Session.IdleSeconds = 8
 	a.latest.Audio = &system.AudioState{Volume: 42}
+	a.latest.Output = "Studio Display Speakers"
 	a.latest.Activity = system.ActivityInfo{HasCamera: true, HasMicrophone: true}
 	a.latest.Media = &system.MediaInfo{
 		State: "playing", Title: "Come Away With Me", Artist: "Norah Jones", Album: "Come Away With Me",

@@ -3,6 +3,7 @@
 package system
 
 import (
+	"strings"
 	"sync"
 	"unsafe"
 
@@ -90,6 +91,8 @@ func readActivity() Activity {
 			}
 		}
 	}
+	current, outputs := readOutputs()
+	a.Output, a.Outputs = current, strings.Join(outputs, "\n")
 	if displayIsAsleep != nil {
 		main := mainDisplayID()
 		a.DisplayAsleep = displayIsAsleep(main) || isPlaceholderDisplay(displayVendor(main), displayModel(main))

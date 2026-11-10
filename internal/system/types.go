@@ -89,7 +89,9 @@ type Snapshot struct {
 	Activity ActivityInfo `json:"activity"`
 	Display  DisplayInfo  `json:"display"`
 	Audio    *AudioState  `json:"audio,omitempty"`
-	Media    *MediaInfo   `json:"media,omitempty"`
+	// Output is the device sound plays through, as "MacBook Pro Speakers".
+	Output string     `json:"output,omitempty"`
+	Media  *MediaInfo `json:"media,omitempty"`
 }
 
 // Runtime contains values that only the MyGo application layer can supply.

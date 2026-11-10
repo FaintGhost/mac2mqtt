@@ -123,6 +123,7 @@ func (c *Collector) Snapshot(ctx context.Context, rt Runtime) Snapshot {
 		},
 		Display: DisplayInfo{Awake: !activity.DisplayAsleep, Count: activity.Displays},
 		Audio:   audio,
+		Output:  activity.Output,
 		Media:   media,
 	}
 }

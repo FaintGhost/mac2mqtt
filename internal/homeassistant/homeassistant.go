@@ -81,6 +81,9 @@ type Options struct {
 	// Shortcuts are the names of the user's shortcuts, which the Run
 	// Shortcut select offers; with none it is left out.
 	Shortcuts []string
+	// Outputs are the devices sound can play through, which the Audio
+	// Output select offers; with none it is left out.
+	Outputs []string
 }
 
 const (
@@ -105,6 +108,7 @@ const (
 	stateUnlocked   = "{% if value_json.session is defined and value_json.session.locked is defined and value_json.session.locked is not none %}{{ 'OFF' if value_json.session.locked else 'ON' }}{% else %}unknown{% endif %}"
 	stateCamera     = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.camera_in_use else 'OFF' }}{% else %}unknown{% endif %}"
 	stateMicrophone = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.microphone_in_use else 'OFF' }}{% else %}unknown{% endif %}"
+	stateOutput     = "{{ value_json.output | default('unknown') }}"
 	stateDisplays   = "{% if value_json.display is defined and value_json.display.count is defined %}{{ value_json.display.count }}{% else %}unknown{% endif %}"
 	stateDisplay    = "{% if value_json.display is defined %}{{ 'ON' if value_json.display.awake else 'OFF' }}{% else %}unknown{% endif %}"
 	stateMuted      = "{% if value_json.audio is defined and value_json.audio.muted is defined and value_json.audio.muted is not none %}{{ 'ON' if value_json.audio.muted else 'OFF' }}{% else %}unknown{% endif %}"
@@ -141,6 +145,7 @@ func SystemEntities(opts Options) []Entity {
 			continue
 		}
 		if entity.ObjectID == "run_shortcut" && len(opts.Shortcuts) == 0 ||
+			entity.ObjectID == "audio_output" && len(opts.Outputs) == 0 ||
 			entity.ObjectID == "camera_in_use" && !opts.HasCamera ||
 			entity.ObjectID == "microphone_in_use" && !opts.HasMicrophone {
 			continue
@@ -258,6 +263,12 @@ func allEntities(opts Options) []Entity {
 			"payload_on":     "ON",
 			"payload_off":    "OFF",
 			"icon":           "mdi:volume-mute",
+		}),
+		state(GroupAudio, "select", "audio_output", "Audio Output", map[string]any{
+			"value_template": stateOutput,
+			"command_topic":  joinTopic(base, "output/set"),
+			"options":        append([]string(nil), opts.Outputs...),
+			"icon":           "mdi:speaker",
 		}),
 		// MQTT discovery has no media_player platform, so Now Playing is
 		// read-only sensors: the playback state, and the title with the

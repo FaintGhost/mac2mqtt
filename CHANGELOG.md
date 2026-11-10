@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- An Audio Output select chooses where sound plays, the speakers or the
+  headphones, as the Sound settings do; the Volume tile names it.
 - Home Assistant knows at once when the Mac goes to sleep: it says it is
   offline as it sleeps, and online again as it wakes, rather than after
   the broker gives up on it.
