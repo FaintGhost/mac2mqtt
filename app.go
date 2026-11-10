@@ -17,6 +17,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"mac2mqtt/internal/config"
+	"mac2mqtt/internal/discover"
 	"mac2mqtt/internal/homeassistant"
 	"mac2mqtt/internal/service"
 	"mac2mqtt/internal/system"
@@ -69,6 +70,14 @@ type app struct {
 	appIcons map[string]*ui.Bitmap
 	// windowSize is the window's, as the last frame laid it out.
 	windowSize ui.Rect
+
+	// The first setup: the brokers found on the network, and the last
+	// test of the connection's settings.
+	found      []discover.Broker
+	searching  bool
+	testing    bool
+	testResult string
+	testFailed bool
 
 	uiMu       sync.Mutex
 	uiQueue    []func()
@@ -159,6 +168,9 @@ func (a *app) ready() {
 			a.tab = tabSettings
 		}
 		a.showWindow()
+		if a.cfg.Broker.Host == "" {
+			a.findBrokers()
+		}
 	}
 	a.captureRuntime()
 	a.startRuntimePoller()

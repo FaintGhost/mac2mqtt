@@ -47,7 +47,7 @@ const zh = {
   "s1.t": "下载",
   "s1.d": "打开磁盘映像，把 Mac2MQTT 拖到“应用程序”。也可以用 Homebrew 安装：",
   "s2.t": "填写 Broker",
-  "s2.d": "使用 Home Assistant 的 MQTT 集成所用的那个 Broker（开启自动发现）：地址、端口和账号。",
+  "s2.d": "使用 Home Assistant 的 MQTT 集成所用的那个 Broker（开启自动发现）。Mac2MQTT 会在你的网络中找到它，填上账号后即可测试连接。",
   "s3.t": "找到你的 Mac",
   "s3.d": "它会出现在 设置 → 设备与服务 → MQTT 中，可直接用于仪表盘和自动化。",
   "mygo.eyebrow": "基于 MyGo 构建",

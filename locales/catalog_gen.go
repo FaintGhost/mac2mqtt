@@ -2519,3 +2519,123 @@ func AutosaveNote() string { return In(i18n.Locale()).AutosaveNote() }
 func (msgs Messages) AutosaveNote() string {
 	return Catalog.Format(msgs.locale, "autosaveNote", nil)
 }
+
+// OnYourNetwork says "On your network"
+// in the language the app shows.
+func OnYourNetwork() string { return In(i18n.Locale()).OnYourNetwork() }
+
+// OnYourNetwork says "On your network"
+// in the language of msgs.
+func (msgs Messages) OnYourNetwork() string {
+	return Catalog.Format(msgs.locale, "onYourNetwork", nil)
+}
+
+// SearchingBrokers says "Looking for brokers…"
+// in the language the app shows.
+func SearchingBrokers() string { return In(i18n.Locale()).SearchingBrokers() }
+
+// SearchingBrokers says "Looking for brokers…"
+// in the language of msgs.
+func (msgs Messages) SearchingBrokers() string {
+	return Catalog.Format(msgs.locale, "searchingBrokers", nil)
+}
+
+// NoneFound says "No broker found"
+// in the language the app shows.
+func NoneFound() string { return In(i18n.Locale()).NoneFound() }
+
+// NoneFound says "No broker found"
+// in the language of msgs.
+func (msgs Messages) NoneFound() string {
+	return Catalog.Format(msgs.locale, "noneFound", nil)
+}
+
+// NoBrokersFound says "Home Assistant's Mosquitto add-on listens on Home Assistant's host, at port 1883. Mac2MQTT needs Local Network access…"
+// in the language the app shows.
+func NoBrokersFound() string { return In(i18n.Locale()).NoBrokersFound() }
+
+// NoBrokersFound says "Home Assistant's Mosquitto add-on listens on Home Assistant's host, at port 1883. Mac2MQTT needs Local Network access…"
+// in the language of msgs.
+func (msgs Messages) NoBrokersFound() string {
+	return Catalog.Format(msgs.locale, "noBrokersFound", nil)
+}
+
+// SearchAgain says "Search Again"
+// in the language the app shows.
+func SearchAgain() string { return In(i18n.Locale()).SearchAgain() }
+
+// SearchAgain says "Search Again"
+// in the language of msgs.
+func (msgs Messages) SearchAgain() string {
+	return Catalog.Format(msgs.locale, "searchAgain", nil)
+}
+
+// UseBroker says "Use"
+// in the language the app shows.
+func UseBroker() string { return In(i18n.Locale()).UseBroker() }
+
+// UseBroker says "Use"
+// in the language of msgs.
+func (msgs Messages) UseBroker() string {
+	return Catalog.Format(msgs.locale, "useBroker", nil)
+}
+
+// TestConnectionTitle says "Test connection"
+// in the language the app shows.
+func TestConnectionTitle() string { return In(i18n.Locale()).TestConnectionTitle() }
+
+// TestConnectionTitle says "Test connection"
+// in the language of msgs.
+func (msgs Messages) TestConnectionTitle() string {
+	return Catalog.Format(msgs.locale, "testConnectionTitle", nil)
+}
+
+// TestConnectionHelp says "Tries these settings; reporting stays connected meanwhile."
+// in the language the app shows.
+func TestConnectionHelp() string { return In(i18n.Locale()).TestConnectionHelp() }
+
+// TestConnectionHelp says "Tries these settings; reporting stays connected meanwhile."
+// in the language of msgs.
+func (msgs Messages) TestConnectionHelp() string {
+	return Catalog.Format(msgs.locale, "testConnectionHelp", nil)
+}
+
+// TestConnection says "Test"
+// in the language the app shows.
+func TestConnection() string { return In(i18n.Locale()).TestConnection() }
+
+// TestConnection says "Test"
+// in the language of msgs.
+func (msgs Messages) TestConnection() string {
+	return Catalog.Format(msgs.locale, "testConnection", nil)
+}
+
+// Testing says "Testing…"
+// in the language the app shows.
+func Testing() string { return In(i18n.Locale()).Testing() }
+
+// Testing says "Testing…"
+// in the language of msgs.
+func (msgs Messages) Testing() string {
+	return Catalog.Format(msgs.locale, "testing", nil)
+}
+
+// TestSucceeded says "Connected to {address}."
+// in the language the app shows.
+func TestSucceeded(address string) string { return In(i18n.Locale()).TestSucceeded(address) }
+
+// TestSucceeded says "Connected to {address}."
+// in the language of msgs.
+func (msgs Messages) TestSucceeded(address string) string {
+	return Catalog.Format(msgs.locale, "testSucceeded", map[string]any{"address": address})
+}
+
+// TestFailed says "Couldn't connect: {error}"
+// in the language the app shows.
+func TestFailed(error string) string { return In(i18n.Locale()).TestFailed(error) }
+
+// TestFailed says "Couldn't connect: {error}"
+// in the language of msgs.
+func (msgs Messages) TestFailed(error string) string {
+	return Catalog.Format(msgs.locale, "testFailed", map[string]any{"error": error})
+}

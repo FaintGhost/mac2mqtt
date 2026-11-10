@@ -1113,3 +1113,23 @@ func TestManagerOffersAndSetsTheAudioOutput(t *testing.T) {
 		return len(chosen) == 1 && chosen[0] == "AirPods Pro"
 	})
 }
+
+func TestTestConnectionLeavesTheReportingConnectionAlone(t *testing.T) {
+	var got broker.Config
+	fake := newFakeClient()
+	cfg := testConfig()
+	err := TestConnection(context.Background(), cfg, func(c broker.Config) broker.Client { got = c; return fake })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ClientID == cfg.Broker.ClientID || got.WillTopic != "" {
+		t.Errorf("test client = %+v: it must not take the reporting one's ID, nor have a will", got)
+	}
+	if fake.disconnectCount() != 1 {
+		t.Error("the test connection stays open")
+	}
+	fake.failConnect = errors.New("not authorized")
+	if err := TestConnection(context.Background(), cfg, func(broker.Config) broker.Client { return fake }); err == nil {
+		t.Error("a refused connection tests fine")
+	}
+}

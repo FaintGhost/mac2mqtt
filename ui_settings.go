@@ -3,6 +3,7 @@ package main
 import (
 	"math"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -61,6 +62,7 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 			row(c, t, locales.PasswordLabel(), "", func() {
 				a.field(ui.TextInput(c, &a.draft.Broker.Password).Password().Placeholder(locales.OptionalPlaceholder()).Width(fieldWidth))
 			})
+			a.testRow(c, t)
 		})
 		section(c, t, p, locales.HomeAssistantSettingsTitle(), locales.HomeAssistantSettingsDescription(), func() {
 			row(c, t, locales.DiscoveryLabel(), "", func() {
@@ -229,4 +231,27 @@ func sinceText(then, now time.Time) string {
 		value, unit = -d.Hours(), i18n.RelativeHour
 	}
 	return i18n.FormatRelativeTime(i18n.Locale(), math.Trunc(value), unit, i18n.RelativeTimeOptions{Auto: true})
+}
+
+// testRow tries the settings as edited, beside the reporting connection,
+// and says how it went.
+func (a *app) testRow(c *ui.Context, t *ui.Theme) {
+	ui.Row(c).FillWidth().MinHeight(44).Padding(8, 14).Gap(12).AlignItems(ui.Center).Children(func() {
+		ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(2).Children(func() {
+			ui.Text(c, locales.TestConnectionTitle()).FontSize(13)
+			note, color := locales.TestConnectionHelp(), t.TextMuted
+			if a.testResult != "" {
+				note = a.testResult
+				if a.testFailed {
+					color = t.Danger
+				}
+			}
+			ui.Text(c, note).FontSize(11).TextColor(color).Wrap().ContentTransition(crossfade)
+		})
+		label := locales.TestConnection()
+		if a.testing {
+			label = locales.Testing()
+		}
+		ui.Button(c, label).Disabled(a.testing || strings.TrimSpace(a.draft.Broker.Host) == "").OnClick(a.testConnection)
+	})
 }

@@ -926,6 +926,16 @@ func (m *Manager) mediaEnabled() bool {
 
 func (m *Manager) brokerConfig() broker.Config {
 	cfg := m.opts.Config
+	c := brokerAddress(cfg)
+	c.ClientID = cfg.Broker.ClientID
+	c.KeepAlive = 60 * time.Second
+	c.ConnectTimeout = 30 * time.Second
+	c.WillTopic, c.WillPayload, c.WillRetain = cfg.AvailabilityTopic(), "offline", true
+	return c
+}
+
+// brokerAddress is where the broker of cfg is and how to sign in to it.
+func brokerAddress(cfg config.Config) broker.Config {
 	return broker.Config{
 		Host:               cfg.Broker.Host,
 		Port:               cfg.Broker.Port,
@@ -933,12 +943,6 @@ func (m *Manager) brokerConfig() broker.Config {
 		InsecureSkipVerify: cfg.Broker.InsecureSkipVerify,
 		Username:           cfg.Broker.Username,
 		Password:           cfg.Broker.Password,
-		ClientID:           cfg.Broker.ClientID,
-		KeepAlive:          60 * time.Second,
-		ConnectTimeout:     30 * time.Second,
-		WillTopic:          cfg.AvailabilityTopic(),
-		WillPayload:        "offline",
-		WillRetain:         true,
 	}
 }
 
@@ -1020,4 +1024,21 @@ func parseMute(value string) (bool, error) {
 	default:
 		return false, fmt.Errorf("invalid mute command %q", value)
 	}
+}
+
+// TestConnection connects to the broker of cfg and disconnects, to tell
+// whether the settings work. Its client has an ID of its own and no last
+// will: it neither takes the reporting connection's place at the broker
+// nor says the Mac went offline as it leaves.
+func TestConnection(ctx context.Context, cfg config.Config, dial func(broker.Config) broker.Client) error {
+	if dial == nil {
+		dial = broker.Dial
+	}
+	c := brokerAddress(cfg)
+	c.ConnectTimeout = 10 * time.Second
+	client := dial(c)
+	if err := client.Connect(ctx); err != nil {
+		return err
+	}
+	return disconnect(client)
 }

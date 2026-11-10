@@ -53,6 +53,7 @@ func (a *app) onboarding(c *ui.Context, t *ui.Theme, p palette) {
 			})
 		})
 	})
+	a.foundBrokers(c, t, p)
 	section(c, t, p, locales.HowItWorks(), "", func() {
 		step := func(n int, title, body string) {
 			ui.Row(c).FillWidth().Padding(10, 14).Gap(12).AlignItems(ui.Center).Children(func() {
@@ -517,4 +518,32 @@ func localizedIdle(seconds int64) string {
 		return locales.IdleMinutes(int(seconds / 60))
 	}
 	return locales.IdleHoursMinutes(int(seconds/3600), int(seconds%3600/60))
+}
+
+// foundBrokers offers the brokers found on the network, to start from one
+// rather than type its address.
+func (a *app) foundBrokers(c *ui.Context, t *ui.Theme, p palette) {
+	footer := ""
+	if !a.searching && len(a.found) == 0 {
+		footer = locales.NoBrokersFound()
+	}
+	section(c, t, p, locales.OnYourNetwork(), footer, func() {
+		if a.searching {
+			c.Key("searching")
+			row(c, t, locales.SearchingBrokers(), "", nil)
+			return
+		}
+		for _, b := range a.found {
+			c.Key(b.Address())
+			row(c, t, b.Name, b.Address(), func() {
+				ui.Button(c, locales.UseBroker()).OnClick(func() { a.useBroker(b) })
+			})
+		}
+		if len(a.found) == 0 {
+			c.Key("again")
+			row(c, t, locales.NoneFound(), "", func() {
+				ui.Button(c, locales.SearchAgain()).OnClick(a.findBrokers)
+			})
+		}
+	})
 }

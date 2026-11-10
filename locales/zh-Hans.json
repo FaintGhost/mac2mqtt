@@ -247,5 +247,17 @@
   "groupsOn": "{n, plural, other {# 组开启}}",
   "groupsOff": "{n, plural, other {# 组关闭}}",
   "groupOff": "关闭",
-  "autosaveNote": "更改会自动保存；连接设置在离开输入框时重新连接。"
+  "autosaveNote": "更改会自动保存；连接设置在离开输入框时重新连接。",
+  "onYourNetwork": "在你的网络中",
+  "searchingBrokers": "正在查找 Broker…",
+  "noneFound": "没有找到 Broker",
+  "noBrokersFound": "Home Assistant 的 Mosquitto 加载项运行在 Home Assistant 所在的主机上，端口 1883。Mac2MQTT 需要「本地网络」权限才能找到它。",
+  "searchAgain": "重新查找",
+  "useBroker": "使用",
+  "testConnectionTitle": "测试连接",
+  "testConnectionHelp": "用当前填写的设置试连一次，不影响正在进行的上报。",
+  "testConnection": "测试",
+  "testing": "正在测试…",
+  "testSucceeded": "已连接到 {address}。",
+  "testFailed": "无法连接：{error}"
 }

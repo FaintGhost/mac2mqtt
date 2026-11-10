@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The welcome finds the broker on your network: Home Assistant's host,
+  where its Mosquitto add-on listens, and brokers that announce
+  themselves. One click puts it into Settings.
+- Test Connection in Settings tries the settings as edited, beside the
+  reporting connection, and says what went wrong.
 - An Audio Output select chooses where sound plays, the speakers or the
   headphones, as the Sound settings do; the Volume tile names it.
 - Home Assistant knows at once when the Mac goes to sleep: it says it is

@@ -375,5 +375,17 @@
         "example": "26"
       }
     }
-  }
+  },
+  "onYourNetwork": "On your network",
+  "searchingBrokers": "Looking for brokers…",
+  "noneFound": "No broker found",
+  "noBrokersFound": "Home Assistant's Mosquitto add-on listens on Home Assistant's host, at port 1883. Mac2MQTT needs Local Network access to find it.",
+  "searchAgain": "Search Again",
+  "useBroker": "Use",
+  "testConnectionTitle": "Test connection",
+  "testConnectionHelp": "Tries these settings; reporting stays connected meanwhile.",
+  "testConnection": "Test",
+  "testing": "Testing…",
+  "testSucceeded": "Connected to {address}.",
+  "testFailed": "Couldn't connect: {error}"
 }
