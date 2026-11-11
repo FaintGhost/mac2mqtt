@@ -53,6 +53,9 @@ type Config struct {
 type Message struct {
 	Topic   string
 	Payload []byte
+	// Retained is set on a message the broker kept, which it sends again
+	// on each subscribe: one sent before, not now.
+	Retained bool
 }
 
 // Client is the MQTT transport used by the status service. Implementations
@@ -372,8 +375,9 @@ func brokerURL(cfg Config) string {
 // buffer. Handlers that retain messages therefore remain safe.
 func copyMessage(msg mqtt.Message) Message {
 	return Message{
-		Topic:   msg.Topic(),
-		Payload: append([]byte(nil), msg.Payload()...),
+		Topic:    msg.Topic(),
+		Payload:  append([]byte(nil), msg.Payload()...),
+		Retained: msg.Retained(),
 	}
 }
 

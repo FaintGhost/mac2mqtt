@@ -35,6 +35,8 @@ itself, Liquid Glass included, in a single small binary with no webview.
 - **Screen and display.** Whether the screen is locked and the display
   awake, how long the Mac has been idle, and buttons to lock the screen,
   sleep or wake the display, and put the Mac to sleep.
+- **Remote unlock** (off by default). Unlock the screen from Home
+  Assistant with a PIN; the password and the PIN stay in the Keychain.
 - **Camera and microphone.** Whether an app uses them, as the menu bar's
   indicator shows, published within two seconds: turn on an on-air light
   during calls.
@@ -112,7 +114,7 @@ Assistant.
 |---|---|
 | Network | Network Connectivity (binary sensor) |
 | Power | Power Source; Battery and Charging on laptops |
-| Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Displays (how many are connected), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons |
+| Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Displays (how many are connected), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons. With remote unlock on, Screen Lock is a lock that unlocks with a PIN, in place of the sensor |
 | Camera and Microphone | Camera In Use, Microphone In Use (binary sensors) |
 | Sound | Volume (number), Mute (switch), Audio Output (select) |
 | Now Playing | Media State, Now Playing (title, with artist, album, app and timing as attributes), Play/Pause, Next Track and Previous Track buttons, Media player |
@@ -121,6 +123,31 @@ Assistant.
 | Diagnostics | Last Update, Uptime, App Uptime, App Version, Hostname |
 
 A Refresh button, which publishes the state at once, is always there.
+
+### Remote unlock
+
+Off by default. In **Settings → Remote Unlock**, turn it on, allow
+Accessibility, and save your login password and a PIN of four digits or
+more; both are kept in the Keychain. Home Assistant then shows the screen
+as a lock (`lock.<device>_screen_lock`): unlocking asks for the PIN, and
+Mac2MQTT wakes the display and types the password into the lock screen,
+as a remote desktop app would. An automation passes the PIN as `code`:
+
+```yaml
+action: lock.unlock
+target:
+  entity_id: lock.mac_mini_screen_lock
+data:
+  code: !secret mac_unlock_pin
+```
+
+Home Assistant asks for the PIN to lock it as well; the Lock Screen
+button still locks without one. It types only into a locked screen of
+your session, once per command, and
+five wrong PINs pause it for 15 minutes. It cannot unlock after a restart,
+while FileVault asks for the password. Anyone who knows the PIN and can
+publish to your broker can unlock the Mac, so give the broker a password,
+ideally with TLS.
 
 ### Media player
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Remote unlock, off by default: Home Assistant unlocks the screen with
+  a PIN, and Mac2MQTT types the login password into the lock screen, as
+  remote desktop apps do. Settings keeps the password and the PIN in the
+  Keychain and asks for Accessibility. Turned on, the Screen Lock sensor
+  becomes a lock (`lock.<device>_screen_lock`): automations reading the
+  sensor read the lock's state instead. Home Assistant asks for the PIN
+  to lock it too; the Lock Screen button still locks without one.
+
 ## 0.4.11
 
 - The welcome finds the broker on your network: Home Assistant's host,

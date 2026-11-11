@@ -123,6 +123,7 @@ func (a *app) publishedEntities() []homeassistant.Entity {
 		HasCamera:     a.latest.Activity.HasCamera,
 		HasMicrophone: a.latest.Activity.HasMicrophone,
 		Disabled:      a.cfg.HomeAssistant.Disabled(),
+		Unlock:        a.cfg.HomeAssistant.RemoteUnlock && a.unlockReady,
 	})
 }
 

@@ -1133,3 +1133,64 @@ func TestTestConnectionLeavesTheReportingConnectionAlone(t *testing.T) {
 		t.Error("a refused connection tests fine")
 	}
 }
+
+func TestManagerLocksAndUnlocksTheScreen(t *testing.T) {
+	fake := newFakeClient()
+	codes := make(chan string, 2)
+	commands := make(chan system.SystemCommand, 1)
+	var mu sync.Mutex
+	var lastError string
+	m := New(Options{
+		Config:   testConfig(),
+		Version:  "0.1.0",
+		Snapshot: func(context.Context) system.Snapshot { return testSnapshot() },
+		NewClient: func(broker.Config) broker.Client {
+			return fake
+		},
+		OnStatus: func(s Status) {
+			mu.Lock()
+			defer mu.Unlock()
+			lastError = s.LastError
+		},
+		SystemCommand: func(_ context.Context, c system.SystemCommand) error { commands <- c; return nil },
+		UnlockScreen: func(_ context.Context, code string) error {
+			codes <- code
+			return errors.New("wrong PIN")
+		},
+		RetryDelay: 10 * time.Millisecond,
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go m.Run(ctx)
+	const topic = "mac2mqtt/test/screen/set"
+	waitFor(t, func() bool { return fake.handler(topic) != nil && len(fake.messages()) > 0 })
+	handler := fake.handler(topic)
+
+	// One sent before is kept by the broker and sent again on connect: it
+	// must not unlock the Mac.
+	handler(broker.Message{Topic: topic, Payload: []byte(`{"action":"UNLOCK","code":"1111"}`), Retained: true})
+	handler(broker.Message{Topic: topic, Payload: []byte(`{"action":"UNLOCK","code":"2468"}`)})
+	if code := <-codes; code != "2468" {
+		t.Errorf("unlocked with %q", code)
+	}
+	handler(broker.Message{Topic: topic, Payload: []byte(`{"action":"LOCK","code":null}`)})
+	if c := <-commands; c != system.CommandLock {
+		t.Errorf("command = %v", c)
+	}
+	select {
+	case code := <-codes:
+		t.Errorf("unlocked again with %q", code)
+	default:
+	}
+	handler(broker.Message{Topic: topic, Payload: []byte(`{"action":"OPEN","code":"9753"}`)})
+	waitFor(t, func() bool {
+		mu.Lock()
+		defer mu.Unlock()
+		return strings.Contains(lastError, "OPEN")
+	})
+	mu.Lock()
+	defer mu.Unlock()
+	if strings.Contains(lastError, "9753") {
+		t.Errorf("the error shows the PIN: %q", lastError)
+	}
+}

@@ -12,6 +12,7 @@ import (
 	"github.com/egoist/mygo/ui"
 
 	"mac2mqtt/internal/config"
+	"mac2mqtt/internal/system"
 	"mac2mqtt/locales"
 )
 
@@ -78,6 +79,7 @@ func (a *app) settingsPage(c *ui.Context, t *ui.Theme, p palette) {
 				a.field(ui.NumberInput(c, &a.editInterval, 5, 3600, 5).Width(fieldWidth))
 			})
 		})
+		a.unlockSection(c, t, p)
 		section(c, t, p, locales.Advanced(), locales.IdentityRetentionDescription(), func() {
 			row(c, t, locales.ClientIDLabel(), locales.ClientIDHelp(), func() {
 				a.field(ui.TextInput(c, &a.draft.Broker.ClientID).Width(fieldWidth))
@@ -253,5 +255,56 @@ func (a *app) testRow(c *ui.Context, t *ui.Theme) {
 			label = locales.Testing()
 		}
 		ui.Button(c, label).Disabled(a.testing || strings.TrimSpace(a.draft.Broker.Host) == "").OnClick(a.testConnection)
+	})
+}
+
+// unlockSection sets up remote unlocking: the switch, the permission to
+// type, and the login password and the PIN, which go to the Keychain.
+func (a *app) unlockSection(c *ui.Context, t *ui.Theme, p palette) {
+	section(c, t, p, locales.UnlockTitle(), locales.UnlockDescription(), func() {
+		help := locales.UnlockHelp()
+		if a.draft.HomeAssistant.RemoteUnlock && !a.unlockReady {
+			help = locales.UnlockNotReady()
+		}
+		row(c, t, locales.UnlockLabel(), help, func() {
+			ui.Switch(c, &a.draft.HomeAssistant.RemoteUnlock).Label(locales.UnlockLabel())
+		})
+		if !a.draft.HomeAssistant.RemoteUnlock {
+			return
+		}
+		c.Key("unlock-setup")
+		ui.Column(c).FillWidth().Gap(1).Dividers(1, p.separator).Transition(rowCollapse).Children(func() {
+			if system.KeyAccess() {
+				row(c, t, locales.KeyAccessLabel(), locales.KeyAccessGranted(), nil)
+			} else {
+				row(c, t, locales.KeyAccessLabel(), locales.KeyAccessMissing(), func() {
+					ui.Button(c, locales.AllowKeyAccess()).OnClick(requestKeyAccess)
+				})
+			}
+			placeholder := locales.UnlockRequired()
+			if a.unlockReady {
+				placeholder = locales.UnlockStored()
+			}
+			row(c, t, locales.LoginPasswordLabel(), locales.LoginPasswordHelp(), func() {
+				ui.TextInput(c, &a.unlockPassword).Password().Placeholder(placeholder).Width(fieldWidth)
+			})
+			row(c, t, locales.UnlockPINLabel(), locales.UnlockPINHelp(), func() {
+				ui.TextInput(c, &a.unlockPIN).Password().Placeholder(placeholder).Width(fieldWidth)
+			})
+			ui.Row(c).FillWidth().MinHeight(44).Padding(8, 14).Gap(8).AlignItems(ui.Center).Children(func() {
+				color := t.TextMuted
+				if a.unlockFailed {
+					color = t.Danger
+				}
+				ui.Text(c, a.unlockNote).FontSize(11).TextColor(color).Wrap().Grow(1).Shrink(1).MinWidth(0).ContentTransition(crossfade)
+				if a.unlockReady {
+					ui.Button(c, locales.ForgetUnlock()).Disabled(a.unlockSaving).OnClick(a.forgetUnlock)
+				}
+				// Both are needed the first time; after, either changes alone.
+				typed := a.unlockPassword != "" && a.unlockPIN != "" ||
+					a.unlockReady && (a.unlockPassword != "" || a.unlockPIN != "")
+				ui.PrimaryButton(c, locales.SaveUnlock()).Disabled(a.unlockSaving || !typed).OnClick(a.saveUnlock)
+			})
+		})
 	})
 }

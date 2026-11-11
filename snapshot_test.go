@@ -35,6 +35,12 @@ func TestSnapshots(t *testing.T) {
 		{"overview-zh", tabOverview, connectedTestApp},
 		{"entities-zh", tabEntities, connectedTestApp},
 		{"settings-scrolled", tabSettings, connectedTestApp},
+		{"settings-unlock-zh", tabSettings, func() *app {
+			a := connectedTestApp()
+			a.cfg.HomeAssistant.RemoteUnlock = true
+			a.draft = a.cfg
+			return a
+		}},
 	} {
 		for _, dark := range []bool{false, true} {
 			a := page.app()
@@ -52,6 +58,10 @@ func TestSnapshots(t *testing.T) {
 			tt.Frame() // the second knows the window's size, for the scroll's edge
 			if strings.HasSuffix(page.name, "-scrolled") {
 				tt.Scroll(500, 400, 0, 130)
+				tt.Frame()
+			}
+			if strings.HasPrefix(page.name, "settings-unlock") {
+				tt.Scroll(500, 400, 0, 1000)
 				tt.Frame()
 			}
 			tt.Advance(time.Second) // past the transitions, at rest

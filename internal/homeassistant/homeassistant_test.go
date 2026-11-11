@@ -161,8 +161,8 @@ func TestDisabledGroupsAreLeftOut(t *testing.T) {
 			t.Errorf("disabled group published %s", entity.ObjectID)
 		}
 	}
-	if n := len(AllEntities(opts)); n != 32 {
-		t.Errorf("all entities = %d, want 32 whatever is disabled", n)
+	if n := len(AllEntities(opts)); n != 33 {
+		t.Errorf("all entities = %d, want 33 whatever is disabled", n)
 	}
 	for _, entity := range AllEntities(opts) {
 		if entity.Group == "" && entity.ObjectID != "refresh" {
@@ -181,6 +181,36 @@ func TestScreenLock(t *testing.T) {
 		}
 	}
 	t.Error("no screen_lock entity")
+}
+
+func TestUnlockPublishesTheScreenAsALock(t *testing.T) {
+	opts := testOptions()
+	opts.Unlock = true
+	entities := SystemEntities(opts)
+	if len(entities) != 30 {
+		t.Errorf("entities = %d, want 30: the sensor as a lock", len(entities))
+	}
+	var lock Entity
+	for _, entity := range entities {
+		switch {
+		case entity.Component == "lock":
+			lock = entity
+		case entity.ObjectID == "screen_lock":
+			t.Errorf("published %s/%s beside the lock", entity.Component, entity.ObjectID)
+		}
+	}
+	if lock.ObjectID != "screen_lock" || lock.Config["command_topic"] != "mac2mqtt/studio/screen/set" ||
+		lock.Config["code_format"] != `^\d{4,}$` || lock.Config["default_entity_id"] != "lock.studio_mac_screen_lock" {
+		t.Fatalf("lock = %+v", lock)
+	}
+	if !strings.Contains(lock.Config["command_template"].(string), "code") {
+		t.Errorf("the command leaves out the PIN: %v", lock.Config["command_template"])
+	}
+	for _, entity := range SystemEntities(testOptions()) {
+		if entity.Component == "lock" {
+			t.Error("published the lock with unlocking off")
+		}
+	}
 }
 
 func TestScreenLockedIsLegacy(t *testing.T) {

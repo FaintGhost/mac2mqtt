@@ -79,6 +79,16 @@ type app struct {
 	testResult string
 	testFailed bool
 
+	// Remote unlocking: whether the Keychain has what it needs, and what
+	// Settings is typing in.
+	unlocker       *unlocker
+	unlockReady    bool
+	unlockPassword string
+	unlockPIN      string
+	unlockSaving   bool
+	unlockNote     string
+	unlockFailed   bool
+
 	uiMu       sync.Mutex
 	uiQueue    []func()
 	uiRunning  bool
@@ -140,6 +150,8 @@ func (a *app) ready() {
 	}
 	a.collector = system.NewCollector(a.version)
 	a.controller = system.NewController()
+	a.unlocker = &unlocker{secrets: mygo.Secrets, unlock: a.controller.UnlockScreen, now: time.Now}
+	a.loadUnlock()
 
 	a.readOpenAtLogin()
 	a.readUpdatePrefs()
@@ -606,6 +618,13 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 		return
 	}
 
+	// Home Assistant gets a lock that unlocks once the Keychain has the
+	// PIN and the login password.
+	var unlockScreen func(context.Context, string) error
+	if cfg.HomeAssistant.RemoteUnlock && a.unlocker.ready() {
+		unlockScreen = a.unlocker.Unlock
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	run := &serviceRun{cancel: cancel, done: make(chan struct{})}
 	mgr := service.New(service.Options{
@@ -630,6 +649,7 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 		SeekMedia:     a.controller.SeekMedia,
 		Activity:      a.collector.Activity,
 		SystemCommand: a.controller.RunSystemCommand,
+		UnlockScreen:  unlockScreen,
 		Notify:        notify,
 		Say:           a.controller.Say,
 		Shortcuts: func(ctx context.Context) []string {
@@ -797,7 +817,8 @@ func cleanupTopics(old, next config.Config) []string {
 	var topics []string
 	discoveryChanged := old.HomeAssistant.DiscoveryPrefix != next.HomeAssistant.DiscoveryPrefix || old.NodeID() != next.NodeID()
 	if discoveryChanged {
-		entities := homeassistant.SystemEntities(homeassistant.Options{
+		// All it may have published, the screen's lock included.
+		entities := homeassistant.AllEntities(homeassistant.Options{
 			BaseTopic:         old.HomeAssistant.BaseTopic,
 			StateTopic:        old.StateTopic(),
 			AvailabilityTopic: old.AvailabilityTopic(),

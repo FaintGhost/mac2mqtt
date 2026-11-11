@@ -61,6 +61,9 @@ type Options struct {
 	// SystemCommand locks the screen, sleeps or wakes the display, or puts
 	// the Mac to sleep.
 	SystemCommand func(context.Context, system.SystemCommand) error
+	// UnlockScreen unlocks the screen when code is the user's PIN. Set, it
+	// publishes the screen as a lock that unlocks too.
+	UnlockScreen func(ctx context.Context, code string) error
 	// Notify shows a notification, and Say speaks text.
 	Notify func(ctx context.Context, title, message string) error
 	Say    func(context.Context, string) error
@@ -605,6 +608,13 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 		default:
 			err = m.opts.SystemCommand(commandCtx, command)
 		}
+	case base + "/screen/set":
+		// A retained message would unlock the Mac at each connect.
+		if req.msg.Retained {
+			err = fmt.Errorf("ignored a retained screen command")
+			break
+		}
+		err = m.screenCommand(commandCtx, payload)
 	case base + "/notify":
 		title, message := parseNotification(payload)
 		switch {
@@ -654,6 +664,32 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 	if strings.Contains(req.msg.Topic, "/volume/") || strings.Contains(req.msg.Topic, "/mute/") {
 		m.refreshMedia()
 	}
+}
+
+// screenCommand locks or unlocks the screen, as the Screen Lock lock asks
+// with JSON holding the action and the PIN. Its errors never hold the
+// payload, which holds the PIN.
+func (m *Manager) screenCommand(ctx context.Context, payload string) error {
+	var c struct {
+		Action string  `json:"action"`
+		Code   *string `json:"code"`
+	}
+	if json.Unmarshal([]byte(payload), &c) != nil {
+		return fmt.Errorf("invalid screen command")
+	}
+	switch {
+	case c.Action == "LOCK" && m.opts.SystemCommand != nil:
+		return m.opts.SystemCommand(ctx, system.CommandLock)
+	case c.Action == "UNLOCK" && m.opts.UnlockScreen != nil:
+		code := ""
+		if c.Code != nil {
+			code = *c.Code
+		}
+		return m.opts.UnlockScreen(ctx, code)
+	case c.Action == "LOCK", c.Action == "UNLOCK":
+		return fmt.Errorf("screen control is unavailable")
+	}
+	return fmt.Errorf("invalid screen action %q", c.Action)
 }
 
 // refreshMedia asks the connection's loop to publish Now Playing again.
@@ -916,6 +952,7 @@ func (m *Manager) entityOptions(probe system.Snapshot) homeassistant.Options {
 		HasCamera:     m.lastActivity.HasCamera,
 		HasMicrophone: m.lastActivity.HasMicrophone,
 		Outputs:       m.lastActivity.OutputNames(),
+		Unlock:        m.opts.UnlockScreen != nil,
 	}
 }
 

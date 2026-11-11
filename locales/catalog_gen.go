@@ -2639,3 +2639,203 @@ func TestFailed(error string) string { return In(i18n.Locale()).TestFailed(error
 func (msgs Messages) TestFailed(error string) string {
 	return Catalog.Format(msgs.locale, "testFailed", map[string]any{"error": error})
 }
+
+// UnlockTitle says "Remote Unlock"
+// in the language the app shows.
+func UnlockTitle() string { return In(i18n.Locale()).UnlockTitle() }
+
+// UnlockTitle says "Remote Unlock"
+// in the language of msgs.
+func (msgs Messages) UnlockTitle() string {
+	return Catalog.Format(msgs.locale, "unlockTitle", nil)
+}
+
+// UnlockDescription says "Home Assistant asks for the PIN, then Mac2MQTT types your login password into the lock screen. Not after a restart, w…"
+// in the language the app shows.
+func UnlockDescription() string { return In(i18n.Locale()).UnlockDescription() }
+
+// UnlockDescription says "Home Assistant asks for the PIN, then Mac2MQTT types your login password into the lock screen. Not after a restart, w…"
+// in the language of msgs.
+func (msgs Messages) UnlockDescription() string {
+	return Catalog.Format(msgs.locale, "unlockDescription", nil)
+}
+
+// UnlockLabel says "Unlock from Home Assistant"
+// in the language the app shows.
+func UnlockLabel() string { return In(i18n.Locale()).UnlockLabel() }
+
+// UnlockLabel says "Unlock from Home Assistant"
+// in the language of msgs.
+func (msgs Messages) UnlockLabel() string {
+	return Catalog.Format(msgs.locale, "unlockLabel", nil)
+}
+
+// UnlockHelp says "Shows the screen as a lock that also unlocks."
+// in the language the app shows.
+func UnlockHelp() string { return In(i18n.Locale()).UnlockHelp() }
+
+// UnlockHelp says "Shows the screen as a lock that also unlocks."
+// in the language of msgs.
+func (msgs Messages) UnlockHelp() string {
+	return Catalog.Format(msgs.locale, "unlockHelp", nil)
+}
+
+// UnlockNotReady says "Save the login password and a PIN to turn it on."
+// in the language the app shows.
+func UnlockNotReady() string { return In(i18n.Locale()).UnlockNotReady() }
+
+// UnlockNotReady says "Save the login password and a PIN to turn it on."
+// in the language of msgs.
+func (msgs Messages) UnlockNotReady() string {
+	return Catalog.Format(msgs.locale, "unlockNotReady", nil)
+}
+
+// KeyAccessLabel says "Accessibility"
+// in the language the app shows.
+func KeyAccessLabel() string { return In(i18n.Locale()).KeyAccessLabel() }
+
+// KeyAccessLabel says "Accessibility"
+// in the language of msgs.
+func (msgs Messages) KeyAccessLabel() string {
+	return Catalog.Format(msgs.locale, "keyAccessLabel", nil)
+}
+
+// KeyAccessGranted says "Allowed: Mac2MQTT can type into the lock screen."
+// in the language the app shows.
+func KeyAccessGranted() string { return In(i18n.Locale()).KeyAccessGranted() }
+
+// KeyAccessGranted says "Allowed: Mac2MQTT can type into the lock screen."
+// in the language of msgs.
+func (msgs Messages) KeyAccessGranted() string {
+	return Catalog.Format(msgs.locale, "keyAccessGranted", nil)
+}
+
+// KeyAccessMissing says "Needed to type the password into the lock screen."
+// in the language the app shows.
+func KeyAccessMissing() string { return In(i18n.Locale()).KeyAccessMissing() }
+
+// KeyAccessMissing says "Needed to type the password into the lock screen."
+// in the language of msgs.
+func (msgs Messages) KeyAccessMissing() string {
+	return Catalog.Format(msgs.locale, "keyAccessMissing", nil)
+}
+
+// AllowKeyAccess says "Allow…"
+// in the language the app shows.
+func AllowKeyAccess() string { return In(i18n.Locale()).AllowKeyAccess() }
+
+// AllowKeyAccess says "Allow…"
+// in the language of msgs.
+func (msgs Messages) AllowKeyAccess() string {
+	return Catalog.Format(msgs.locale, "allowKeyAccess", nil)
+}
+
+// LoginPasswordLabel says "Login password"
+// in the language the app shows.
+func LoginPasswordLabel() string { return In(i18n.Locale()).LoginPasswordLabel() }
+
+// LoginPasswordLabel says "Login password"
+// in the language of msgs.
+func (msgs Messages) LoginPasswordLabel() string {
+	return Catalog.Format(msgs.locale, "loginPasswordLabel", nil)
+}
+
+// LoginPasswordHelp says "What you unlock this Mac with. Kept in the Keychain."
+// in the language the app shows.
+func LoginPasswordHelp() string { return In(i18n.Locale()).LoginPasswordHelp() }
+
+// LoginPasswordHelp says "What you unlock this Mac with. Kept in the Keychain."
+// in the language of msgs.
+func (msgs Messages) LoginPasswordHelp() string {
+	return Catalog.Format(msgs.locale, "loginPasswordHelp", nil)
+}
+
+// UnlockPINLabel says "PIN"
+// in the language the app shows.
+func UnlockPINLabel() string { return In(i18n.Locale()).UnlockPINLabel() }
+
+// UnlockPINLabel says "PIN"
+// in the language of msgs.
+func (msgs Messages) UnlockPINLabel() string {
+	return Catalog.Format(msgs.locale, "unlockPINLabel", nil)
+}
+
+// UnlockPINHelp says "Four digits or more, which Home Assistant asks for. Five wrong ones pause unlocking for 15 minutes."
+// in the language the app shows.
+func UnlockPINHelp() string { return In(i18n.Locale()).UnlockPINHelp() }
+
+// UnlockPINHelp says "Four digits or more, which Home Assistant asks for. Five wrong ones pause unlocking for 15 minutes."
+// in the language of msgs.
+func (msgs Messages) UnlockPINHelp() string {
+	return Catalog.Format(msgs.locale, "unlockPINHelp", nil)
+}
+
+// UnlockRequired says "Required"
+// in the language the app shows.
+func UnlockRequired() string { return In(i18n.Locale()).UnlockRequired() }
+
+// UnlockRequired says "Required"
+// in the language of msgs.
+func (msgs Messages) UnlockRequired() string {
+	return Catalog.Format(msgs.locale, "unlockRequired", nil)
+}
+
+// UnlockStored says "Saved"
+// in the language the app shows.
+func UnlockStored() string { return In(i18n.Locale()).UnlockStored() }
+
+// UnlockStored says "Saved"
+// in the language of msgs.
+func (msgs Messages) UnlockStored() string {
+	return Catalog.Format(msgs.locale, "unlockStored", nil)
+}
+
+// SaveUnlock says "Save"
+// in the language the app shows.
+func SaveUnlock() string { return In(i18n.Locale()).SaveUnlock() }
+
+// SaveUnlock says "Save"
+// in the language of msgs.
+func (msgs Messages) SaveUnlock() string {
+	return Catalog.Format(msgs.locale, "saveUnlock", nil)
+}
+
+// ForgetUnlock says "Forget"
+// in the language the app shows.
+func ForgetUnlock() string { return In(i18n.Locale()).ForgetUnlock() }
+
+// ForgetUnlock says "Forget"
+// in the language of msgs.
+func (msgs Messages) ForgetUnlock() string {
+	return Catalog.Format(msgs.locale, "forgetUnlock", nil)
+}
+
+// UnlockSaved says "Saved in the Keychain."
+// in the language the app shows.
+func UnlockSaved() string { return In(i18n.Locale()).UnlockSaved() }
+
+// UnlockSaved says "Saved in the Keychain."
+// in the language of msgs.
+func (msgs Messages) UnlockSaved() string {
+	return Catalog.Format(msgs.locale, "unlockSaved", nil)
+}
+
+// UnlockInvalidPIN says "The PIN must be four digits or more."
+// in the language the app shows.
+func UnlockInvalidPIN() string { return In(i18n.Locale()).UnlockInvalidPIN() }
+
+// UnlockInvalidPIN says "The PIN must be four digits or more."
+// in the language of msgs.
+func (msgs Messages) UnlockInvalidPIN() string {
+	return Catalog.Format(msgs.locale, "unlockInvalidPIN", nil)
+}
+
+// UnlockSaveFailed says "Couldn't use the Keychain: {error}"
+// in the language the app shows.
+func UnlockSaveFailed(error string) string { return In(i18n.Locale()).UnlockSaveFailed(error) }
+
+// UnlockSaveFailed says "Couldn't use the Keychain: {error}"
+// in the language of msgs.
+func (msgs Messages) UnlockSaveFailed(error string) string {
+	return Catalog.Format(msgs.locale, "unlockSaveFailed", map[string]any{"error": error})
+}

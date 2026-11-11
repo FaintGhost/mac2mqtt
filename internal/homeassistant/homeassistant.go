@@ -84,6 +84,9 @@ type Options struct {
 	// Outputs are the devices sound can play through, which the Audio
 	// Output select offers; with none it is left out.
 	Outputs []string
+	// Unlock publishes the screen as a lock that unlocks too, with a PIN,
+	// in place of the Screen Lock sensor.
+	Unlock bool
 }
 
 const (
@@ -105,6 +108,7 @@ const (
 	stateNetworkOnline = "{% if value_json.network is defined and value_json.network.online is defined and value_json.network.online is not none %}{{ 'ON' if value_json.network.online else 'OFF' }}{% else %}unknown{% endif %}"
 	stateCharging      = "{% if value_json.power is defined and value_json.power.charging is defined and value_json.power.charging is not none %}{{ 'ON' if value_json.power.charging else 'OFF' }}{% else %}unknown{% endif %}"
 	// The lock device class's ON is unlocked.
+	stateScreenLock = "{% if value_json.session is defined and value_json.session.locked is defined and value_json.session.locked is not none %}{{ 'LOCKED' if value_json.session.locked else 'UNLOCKED' }}{% else %}None{% endif %}"
 	stateUnlocked   = "{% if value_json.session is defined and value_json.session.locked is defined and value_json.session.locked is not none %}{{ 'OFF' if value_json.session.locked else 'ON' }}{% else %}unknown{% endif %}"
 	stateCamera     = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.camera_in_use else 'OFF' }}{% else %}unknown{% endif %}"
 	stateMicrophone = "{% if value_json.activity is defined %}{{ 'ON' if value_json.activity.microphone_in_use else 'OFF' }}{% else %}unknown{% endif %}"
@@ -127,6 +131,10 @@ const (
 	GroupDiagnostics = "diagnostics"
 )
 
+// UnlockPINFormat is what an unlocking PIN must be: four digits or more,
+// which Home Assistant asks for with a keypad.
+const UnlockPINFormat = `^\d{4,}$`
+
 // Groups lists the groups in the order the app shows them. The Refresh
 // button belongs to none: it is always published.
 var Groups = []string{GroupNetwork, GroupPower, GroupSession, GroupActivity, GroupAudio, GroupMedia, GroupNotify, GroupShortcuts, GroupDiagnostics}
@@ -142,6 +150,9 @@ func SystemEntities(opts Options) []Entity {
 			continue
 		}
 		if opts.HasBattery == false && (entity.ObjectID == "battery" || entity.ObjectID == "charging") {
+			continue
+		}
+		if unlocks := entity.Component == "lock"; entity.ObjectID == "screen_lock" && unlocks != opts.Unlock {
 			continue
 		}
 		if entity.ObjectID == "run_shortcut" && len(opts.Shortcuts) == 0 ||
@@ -236,6 +247,17 @@ func allEntities(opts Options) []Entity {
 			"icon":           "mdi:monitor-multiple",
 		}),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "lock_screen", "Lock Screen", "LOCK", "mdi:monitor-lock"),
+		// With remote unlocking on, the Screen Lock sensor as a lock. Home
+		// Assistant asks for the PIN, which it sends with the command, to
+		// lock as well as to unlock: the Lock Screen button stays, to lock
+		// without it.
+		state(GroupSession, "lock", "screen_lock", "Screen Lock", map[string]any{
+			"value_template":   stateScreenLock,
+			"command_topic":    joinTopic(base, "screen/set"),
+			"command_template": "{{ {'action': value, 'code': code} | to_json }}",
+			"code_format":      UnlockPINFormat,
+			"icon":             "mdi:monitor-lock",
+		}),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "display_sleep", "Sleep Display", "DISPLAY_SLEEP", "mdi:monitor-off"),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "display_wake", "Wake Display", "DISPLAY_WAKE", "mdi:monitor-eye"),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "sleep", "Sleep", "SLEEP", "mdi:power-sleep"),

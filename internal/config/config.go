@@ -54,6 +54,9 @@ type HomeAssistant struct {
 	DisabledGroups []string `json:"disabled_groups,omitempty"`
 	// EnabledGroups names the groups of OptInGroups that are published.
 	EnabledGroups []string `json:"enabled_groups,omitempty"`
+	// RemoteUnlock lets Home Assistant unlock the screen with a PIN. The
+	// PIN and the login password are in the Keychain, not here.
+	RemoteUnlock bool `json:"remote_unlock,omitempty"`
 }
 
 // OptInGroups are the entity groups published only when the user turns
