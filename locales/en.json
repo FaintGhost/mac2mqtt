@@ -395,7 +395,7 @@
   "unlockNotReady": "Save the login password and a PIN to turn it on.",
   "keyAccessLabel": "Accessibility",
   "keyAccessGranted": "Allowed: Mac2MQTT can type into the lock screen.",
-  "keyAccessMissing": "Needed to type the password into the lock screen.",
+  "keyAccessMissing": "Needed to type the password into the lock screen. Once allowed, quit and reopen Mac2MQTT: macOS lets it type only after that.",
   "allowKeyAccess": "Allow…",
   "loginPasswordLabel": "Login password",
   "loginPasswordHelp": "What you unlock this Mac with. Kept in the Keychain.",
@@ -407,5 +407,14 @@
   "forgetUnlock": "Forget",
   "unlockSaved": "Saved in the Keychain.",
   "unlockInvalidPIN": "The PIN must be four digits or more.",
-  "unlockSaveFailed": "Couldn't use the Keychain: {error}"
+  "unlockSaveFailed": "Couldn't use the Keychain: {error}",
+  "unlockFailedTitle": "Couldn't unlock from Home Assistant",
+  "unlockLastAttempt": "Home Assistant asked to unlock {when}: {result}",
+  "unlockResultUnlocked": "unlocked.",
+  "unlockResultWrongPIN": "the PIN was wrong.",
+  "unlockResultPaused": "paused for 15 minutes after five wrong PINs.",
+  "unlockResultNoAccess": "Mac2MQTT isn't allowed to type. Allow it in Accessibility, then quit and reopen the app.",
+  "unlockResultNotOnConsole": "another user is using the Mac.",
+  "unlockResultStillLocked": "the password was typed, but the screen stayed locked. Check the login password; if you just allowed Accessibility, quit and reopen Mac2MQTT.",
+  "unlockResultMeanwhile": "the screen was unlocked meanwhile."
 }

@@ -85,7 +85,7 @@ type Options struct {
 	// Output select offers; with none it is left out.
 	Outputs []string
 	// Unlock publishes the screen as a lock that unlocks too, with a PIN,
-	// in place of the Screen Lock sensor.
+	// in place of the Screen Lock sensor and the Lock Screen button.
 	Unlock bool
 }
 
@@ -152,7 +152,8 @@ func SystemEntities(opts Options) []Entity {
 		if opts.HasBattery == false && (entity.ObjectID == "battery" || entity.ObjectID == "charging") {
 			continue
 		}
-		if unlocks := entity.Component == "lock"; entity.ObjectID == "screen_lock" && unlocks != opts.Unlock {
+		if unlocks := entity.Component == "lock"; entity.ObjectID == "screen_lock" && unlocks != opts.Unlock ||
+			entity.ObjectID == "lock_screen" && opts.Unlock {
 			continue
 		}
 		if entity.ObjectID == "run_shortcut" && len(opts.Shortcuts) == 0 ||
@@ -247,10 +248,9 @@ func allEntities(opts Options) []Entity {
 			"icon":           "mdi:monitor-multiple",
 		}),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "lock_screen", "Lock Screen", "LOCK", "mdi:monitor-lock"),
-		// With remote unlocking on, the Screen Lock sensor as a lock. Home
-		// Assistant asks for the PIN, which it sends with the command, to
-		// lock as well as to unlock: the Lock Screen button stays, to lock
-		// without it.
+		// With remote unlocking on, the sensor and the button above as one
+		// lock. Home Assistant asks for a code matching code_format to lock
+		// as well, but only unlocking checks it is the PIN.
 		state(GroupSession, "lock", "screen_lock", "Screen Lock", map[string]any{
 			"value_template":   stateScreenLock,
 			"command_topic":    joinTopic(base, "screen/set"),

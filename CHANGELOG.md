@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- With remote unlock on, the lock takes the Lock Screen button's place
+  too, so Home Assistant no longer shows both. Locking asks for a code,
+  which only unlocking checks is the PIN.
+- Settings tells how the last unlock went, and a notification says why
+  one failed: a wrong PIN, no Accessibility, or a password the screen
+  did not take. Settings says to reopen the app after allowing
+  Accessibility, which macOS needs before the app may type.
+
 ## 0.4.12
 
 - Remote unlock, off by default: Home Assistant unlocks the screen with

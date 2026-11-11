@@ -267,7 +267,7 @@
   "unlockNotReady": "保存登录密码和 PIN 后生效。",
   "keyAccessLabel": "辅助功能",
   "keyAccessGranted": "已允许：Mac2MQTT 可以在锁屏界面键入。",
-  "keyAccessMissing": "需要它才能在锁屏界面键入密码。",
+  "keyAccessMissing": "需要它才能在锁屏界面键入密码。允许后请退出并重新打开 Mac2MQTT，macOS 之后才会让它键入。",
   "allowKeyAccess": "允许…",
   "loginPasswordLabel": "登录密码",
   "loginPasswordHelp": "解锁这台 Mac 用的密码，保存在钥匙串中。",
@@ -279,5 +279,14 @@
   "forgetUnlock": "清除",
   "unlockSaved": "已保存到钥匙串。",
   "unlockInvalidPIN": "PIN 必须是至少四位数字。",
-  "unlockSaveFailed": "无法使用钥匙串：{error}"
+  "unlockSaveFailed": "无法使用钥匙串：{error}",
+  "unlockFailedTitle": "未能从 Home Assistant 解锁",
+  "unlockLastAttempt": "Home Assistant 于{when}请求解锁：{result}",
+  "unlockResultUnlocked": "已解锁。",
+  "unlockResultWrongPIN": "PIN 错误。",
+  "unlockResultPaused": "连续五次 PIN 错误，已暂停 15 分钟。",
+  "unlockResultNoAccess": "Mac2MQTT 没有键入权限。请在辅助功能中允许，然后退出并重新打开 App。",
+  "unlockResultNotOnConsole": "另一位用户正在使用这台 Mac。",
+  "unlockResultStillLocked": "已键入密码，但屏幕仍然锁定。请检查登录密码；如果刚允许了辅助功能，请退出并重新打开 Mac2MQTT。",
+  "unlockResultMeanwhile": "屏幕在此期间已被解锁。"
 }

@@ -187,15 +187,15 @@ func TestUnlockPublishesTheScreenAsALock(t *testing.T) {
 	opts := testOptions()
 	opts.Unlock = true
 	entities := SystemEntities(opts)
-	if len(entities) != 30 {
-		t.Errorf("entities = %d, want 30: the sensor as a lock", len(entities))
+	if len(entities) != 29 {
+		t.Errorf("entities = %d, want 29: the sensor and the button as one lock", len(entities))
 	}
 	var lock Entity
 	for _, entity := range entities {
 		switch {
 		case entity.Component == "lock":
 			lock = entity
-		case entity.ObjectID == "screen_lock":
+		case entity.ObjectID == "screen_lock", entity.ObjectID == "lock_screen":
 			t.Errorf("published %s/%s beside the lock", entity.Component, entity.ObjectID)
 		}
 	}

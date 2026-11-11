@@ -88,6 +88,10 @@ type app struct {
 	unlockSaving   bool
 	unlockNote     string
 	unlockFailed   bool
+	// The last time Home Assistant asked to unlock, and how it went.
+	unlockLastAt     time.Time
+	unlockLastResult string
+	unlockLastFailed bool
 
 	uiMu       sync.Mutex
 	uiQueue    []func()
@@ -622,7 +626,11 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 	// PIN and the login password.
 	var unlockScreen func(context.Context, string) error
 	if cfg.HomeAssistant.RemoteUnlock && a.unlocker.ready() {
-		unlockScreen = a.unlocker.Unlock
+		unlockScreen = func(ctx context.Context, code string) error {
+			err := a.unlocker.Unlock(ctx, code)
+			a.unlockAttempted(err)
+			return err
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

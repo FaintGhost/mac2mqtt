@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"sync"
 	"time"
@@ -189,4 +190,44 @@ func requestKeyAccess() {
 	if !system.RequestKeyAccess() {
 		mygo.Shell.OpenExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
 	}
+}
+
+// unlockAttempted tells how an unlock Home Assistant asked for went: in
+// Settings, and in a notification when it failed, which the user sees
+// once at the Mac, as a wrong PIN should be seen.
+func (a *app) unlockAttempted(err error) {
+	result := unlockResultText(err)
+	if err != nil {
+		log.Printf("Mac2MQTT: unlock: %v", err)
+		_ = mygo.NewNotification(mygo.NotificationOptions{
+			Title: locales.UnlockFailedTitle(),
+			Body:  result,
+		}).Show()
+	}
+	a.ui(func() {
+		a.unlockLastAt, a.unlockLastResult, a.unlockLastFailed = time.Now(), result, err != nil
+	})
+}
+
+// unlockResultText says how an unlock went, in the app's language.
+func unlockResultText(err error) string {
+	switch {
+	case err == nil:
+		return locales.UnlockResultUnlocked()
+	case errors.Is(err, errWrongPIN):
+		return locales.UnlockResultWrongPIN()
+	case errors.Is(err, errPINLockedOut):
+		return locales.UnlockResultPaused()
+	case errors.Is(err, errNoUnlock):
+		return locales.UnlockNotReady()
+	case errors.Is(err, system.ErrNoKeyAccess):
+		return locales.UnlockResultNoAccess()
+	case errors.Is(err, system.ErrNotOnConsole):
+		return locales.UnlockResultNotOnConsole()
+	case errors.Is(err, system.ErrStillLocked):
+		return locales.UnlockResultStillLocked()
+	case errors.Is(err, system.ErrUnlockedMeanwhile):
+		return locales.UnlockResultMeanwhile()
+	}
+	return err.Error()
 }

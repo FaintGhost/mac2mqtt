@@ -2710,11 +2710,11 @@ func (msgs Messages) KeyAccessGranted() string {
 	return Catalog.Format(msgs.locale, "keyAccessGranted", nil)
 }
 
-// KeyAccessMissing says "Needed to type the password into the lock screen."
+// KeyAccessMissing says "Needed to type the password into the lock screen. Once allowed, quit and reopen Mac2MQTT: macOS lets it type only aft…"
 // in the language the app shows.
 func KeyAccessMissing() string { return In(i18n.Locale()).KeyAccessMissing() }
 
-// KeyAccessMissing says "Needed to type the password into the lock screen."
+// KeyAccessMissing says "Needed to type the password into the lock screen. Once allowed, quit and reopen Mac2MQTT: macOS lets it type only aft…"
 // in the language of msgs.
 func (msgs Messages) KeyAccessMissing() string {
 	return Catalog.Format(msgs.locale, "keyAccessMissing", nil)
@@ -2838,4 +2838,96 @@ func UnlockSaveFailed(error string) string { return In(i18n.Locale()).UnlockSave
 // in the language of msgs.
 func (msgs Messages) UnlockSaveFailed(error string) string {
 	return Catalog.Format(msgs.locale, "unlockSaveFailed", map[string]any{"error": error})
+}
+
+// UnlockFailedTitle says "Couldn't unlock from Home Assistant"
+// in the language the app shows.
+func UnlockFailedTitle() string { return In(i18n.Locale()).UnlockFailedTitle() }
+
+// UnlockFailedTitle says "Couldn't unlock from Home Assistant"
+// in the language of msgs.
+func (msgs Messages) UnlockFailedTitle() string {
+	return Catalog.Format(msgs.locale, "unlockFailedTitle", nil)
+}
+
+// UnlockLastAttempt says "Home Assistant asked to unlock {when}: {result}"
+// in the language the app shows.
+func UnlockLastAttempt(when string, result string) string {
+	return In(i18n.Locale()).UnlockLastAttempt(when, result)
+}
+
+// UnlockLastAttempt says "Home Assistant asked to unlock {when}: {result}"
+// in the language of msgs.
+func (msgs Messages) UnlockLastAttempt(when string, result string) string {
+	return Catalog.Format(msgs.locale, "unlockLastAttempt", map[string]any{"when": when, "result": result})
+}
+
+// UnlockResultUnlocked says "unlocked."
+// in the language the app shows.
+func UnlockResultUnlocked() string { return In(i18n.Locale()).UnlockResultUnlocked() }
+
+// UnlockResultUnlocked says "unlocked."
+// in the language of msgs.
+func (msgs Messages) UnlockResultUnlocked() string {
+	return Catalog.Format(msgs.locale, "unlockResultUnlocked", nil)
+}
+
+// UnlockResultWrongPIN says "the PIN was wrong."
+// in the language the app shows.
+func UnlockResultWrongPIN() string { return In(i18n.Locale()).UnlockResultWrongPIN() }
+
+// UnlockResultWrongPIN says "the PIN was wrong."
+// in the language of msgs.
+func (msgs Messages) UnlockResultWrongPIN() string {
+	return Catalog.Format(msgs.locale, "unlockResultWrongPIN", nil)
+}
+
+// UnlockResultPaused says "paused for 15 minutes after five wrong PINs."
+// in the language the app shows.
+func UnlockResultPaused() string { return In(i18n.Locale()).UnlockResultPaused() }
+
+// UnlockResultPaused says "paused for 15 minutes after five wrong PINs."
+// in the language of msgs.
+func (msgs Messages) UnlockResultPaused() string {
+	return Catalog.Format(msgs.locale, "unlockResultPaused", nil)
+}
+
+// UnlockResultNoAccess says "Mac2MQTT isn't allowed to type. Allow it in Accessibility, then quit and reopen the app."
+// in the language the app shows.
+func UnlockResultNoAccess() string { return In(i18n.Locale()).UnlockResultNoAccess() }
+
+// UnlockResultNoAccess says "Mac2MQTT isn't allowed to type. Allow it in Accessibility, then quit and reopen the app."
+// in the language of msgs.
+func (msgs Messages) UnlockResultNoAccess() string {
+	return Catalog.Format(msgs.locale, "unlockResultNoAccess", nil)
+}
+
+// UnlockResultNotOnConsole says "another user is using the Mac."
+// in the language the app shows.
+func UnlockResultNotOnConsole() string { return In(i18n.Locale()).UnlockResultNotOnConsole() }
+
+// UnlockResultNotOnConsole says "another user is using the Mac."
+// in the language of msgs.
+func (msgs Messages) UnlockResultNotOnConsole() string {
+	return Catalog.Format(msgs.locale, "unlockResultNotOnConsole", nil)
+}
+
+// UnlockResultStillLocked says "the password was typed, but the screen stayed locked. Check the login password; if you just allowed Accessibility, qu…"
+// in the language the app shows.
+func UnlockResultStillLocked() string { return In(i18n.Locale()).UnlockResultStillLocked() }
+
+// UnlockResultStillLocked says "the password was typed, but the screen stayed locked. Check the login password; if you just allowed Accessibility, qu…"
+// in the language of msgs.
+func (msgs Messages) UnlockResultStillLocked() string {
+	return Catalog.Format(msgs.locale, "unlockResultStillLocked", nil)
+}
+
+// UnlockResultMeanwhile says "the screen was unlocked meanwhile."
+// in the language the app shows.
+func UnlockResultMeanwhile() string { return In(i18n.Locale()).UnlockResultMeanwhile() }
+
+// UnlockResultMeanwhile says "the screen was unlocked meanwhile."
+// in the language of msgs.
+func (msgs Messages) UnlockResultMeanwhile() string {
+	return Catalog.Format(msgs.locale, "unlockResultMeanwhile", nil)
 }

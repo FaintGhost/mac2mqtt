@@ -114,7 +114,7 @@ Assistant.
 |---|---|
 | Network | Network Connectivity (binary sensor) |
 | Power | Power Source; Battery and Charging on laptops |
-| Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Displays (how many are connected), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons. With remote unlock on, Screen Lock is a lock that unlocks with a PIN, in place of the sensor |
+| Screen and Session | Screen Lock (Locked or Unlocked), Display (binary sensors), Displays (how many are connected), Idle Time; Lock Screen, Sleep Display, Wake Display and Sleep buttons. With remote unlock on, Screen Lock is a lock that unlocks with a PIN, in place of the sensor and the Lock Screen button |
 | Camera and Microphone | Camera In Use, Microphone In Use (binary sensors) |
 | Sound | Volume (number), Mute (switch), Audio Output (select) |
 | Now Playing | Media State, Now Playing (title, with artist, album, app and timing as attributes), Play/Pause, Next Track and Previous Track buttons, Media player |
@@ -127,7 +127,8 @@ A Refresh button, which publishes the state at once, is always there.
 ### Remote unlock
 
 Off by default. In **Settings → Remote Unlock**, turn it on, allow
-Accessibility, and save your login password and a PIN of four digits or
+Accessibility (then quit and reopen the app, which macOS needs before it
+lets the app type), and save your login password and a PIN of four digits or
 more; both are kept in the Keychain. Home Assistant then shows the screen
 as a lock (`lock.<device>_screen_lock`): unlocking asks for the PIN, and
 Mac2MQTT wakes the display and types the password into the lock screen,
@@ -141,8 +142,8 @@ data:
   code: !secret mac_unlock_pin
 ```
 
-Home Assistant asks for the PIN to lock it as well; the Lock Screen
-button still locks without one. It types only into a locked screen of
+Home Assistant asks for a code to lock it as well, but only unlocking
+checks it is the PIN. It types only into a locked screen of
 your session, once per command, and
 five wrong PINs pause it for 15 minutes. It cannot unlock after a restart,
 while FileVault asks for the password. Anyone who knows the PIN and can

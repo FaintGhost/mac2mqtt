@@ -296,7 +296,14 @@ func (a *app) unlockSection(c *ui.Context, t *ui.Theme, p palette) {
 				if a.unlockFailed {
 					color = t.Danger
 				}
-				ui.Text(c, a.unlockNote).FontSize(11).TextColor(color).Wrap().Grow(1).Shrink(1).MinWidth(0).ContentTransition(crossfade)
+				note := a.unlockNote
+				if note == "" && !a.unlockLastAt.IsZero() {
+					note = locales.UnlockLastAttempt(sinceText(a.unlockLastAt, time.Now()), a.unlockLastResult)
+					if a.unlockLastFailed {
+						color = t.Danger
+					}
+				}
+				ui.Text(c, note).FontSize(11).TextColor(color).Wrap().Grow(1).Shrink(1).MinWidth(0).ContentTransition(crossfade)
 				if a.unlockReady {
 					ui.Button(c, locales.ForgetUnlock()).Disabled(a.unlockSaving).OnClick(a.forgetUnlock)
 				}
