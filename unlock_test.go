@@ -37,36 +37,36 @@ func newTestUnlocker(now *time.Time) (*unlocker, *[]string) {
 func TestUnlockerTypesThePasswordForThePIN(t *testing.T) {
 	now := time.Unix(0, 0)
 	u, typed := newTestUnlocker(&now)
-	if u.ready() {
+	if u.ready(false) {
 		t.Fatal("ready with nothing saved")
 	}
-	if err := u.Unlock(context.Background(), "1234"); !errors.Is(err, errNoUnlock) {
+	if err := u.Unlock(context.Background(), "1234", false); !errors.Is(err, errNoUnlock) {
 		t.Fatalf("err = %v, want errNoUnlock", err)
 	}
 	if err := u.save("hunter2", "12"); !errors.Is(err, errInvalidPIN) {
 		t.Fatalf("saved a two-digit PIN: %v", err)
 	}
-	if err := u.save("hunter2", "2468"); err != nil || !u.ready() {
-		t.Fatalf("save: %v, ready %v", err, u.ready())
+	if err := u.save("hunter2", "2468"); err != nil || !u.ready(false) {
+		t.Fatalf("save: %v, ready %v", err, u.ready(false))
 	}
-	if err := u.Unlock(context.Background(), "1357"); !errors.Is(err, errWrongPIN) {
+	if err := u.Unlock(context.Background(), "1357", false); !errors.Is(err, errWrongPIN) {
 		t.Fatalf("err = %v, want errWrongPIN", err)
 	}
-	if err := u.Unlock(context.Background(), "2468"); err != nil {
+	if err := u.Unlock(context.Background(), "2468", false); err != nil {
 		t.Fatal(err)
 	}
 	// The PIN changes alone, keeping the password.
 	if err := u.save("", "97531"); err != nil {
 		t.Fatal(err)
 	}
-	if err := u.Unlock(context.Background(), "97531"); err != nil {
+	if err := u.Unlock(context.Background(), "97531", false); err != nil {
 		t.Fatal(err)
 	}
 	if len(*typed) != 2 || (*typed)[0] != "hunter2" || (*typed)[1] != "hunter2" {
 		t.Errorf("typed %q", *typed)
 	}
-	if err := u.forget(); err != nil || u.ready() {
-		t.Errorf("forget: %v, ready %v", err, u.ready())
+	if err := u.forget(); err != nil || u.ready(false) {
+		t.Errorf("forget: %v, ready %v", err, u.ready(false))
 	}
 }
 
@@ -77,23 +77,43 @@ func TestUnlockerPausesAfterWrongPINs(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i := 1; i < maxPINFailures; i++ {
-		if err := u.Unlock(context.Background(), "0000"); !errors.Is(err, errWrongPIN) {
+		if err := u.Unlock(context.Background(), "0000", false); !errors.Is(err, errWrongPIN) {
 			t.Fatalf("try %d: %v", i, err)
 		}
 	}
-	if err := u.Unlock(context.Background(), "0000"); !errors.Is(err, errPINLockedOut) {
+	if err := u.Unlock(context.Background(), "0000", false); !errors.Is(err, errPINLockedOut) {
 		t.Fatalf("err = %v, want errPINLockedOut", err)
 	}
 	// Paused, even the right PIN does not unlock.
 	now = now.Add(pinLockout - time.Second)
-	if err := u.Unlock(context.Background(), "2468"); !errors.Is(err, errPINLockedOut) {
+	if err := u.Unlock(context.Background(), "2468", false); !errors.Is(err, errPINLockedOut) {
 		t.Fatalf("err = %v, want errPINLockedOut", err)
 	}
 	now = now.Add(time.Second)
-	if err := u.Unlock(context.Background(), "2468"); err != nil {
+	if err := u.Unlock(context.Background(), "2468", false); err != nil {
 		t.Fatal(err)
 	}
 	if len(*typed) != 1 {
+		t.Errorf("typed %d times", len(*typed))
+	}
+}
+
+func TestUnlockerWithoutPIN(t *testing.T) {
+	now := time.Unix(0, 0)
+	u, typed := newTestUnlocker(&now)
+	if err := u.save("hunter2", ""); err != nil {
+		t.Fatal(err)
+	}
+	if u.ready(false) || !u.ready(true) {
+		t.Errorf("ready = %v with a PIN, %v without, want only without", u.ready(false), u.ready(true))
+	}
+	// Home Assistant sends no code, or whatever an automation gives.
+	for _, code := range []string{"", "0000"} {
+		if err := u.Unlock(context.Background(), code, true); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(*typed) != 2 {
 		t.Errorf("typed %d times", len(*typed))
 	}
 }

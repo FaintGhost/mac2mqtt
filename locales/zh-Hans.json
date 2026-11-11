@@ -261,7 +261,7 @@
   "testSucceeded": "已连接到 {address}。",
   "testFailed": "无法连接：{error}",
   "unlockTitle": "远程解锁",
-  "unlockDescription": "Home Assistant 先要求输入 PIN，然后 Mac2MQTT 会在锁屏界面替你键入登录密码。重启后 FileVault 要求输入密码时无法使用。任何知道 PIN 并能向你的 Broker 发消息的人都能解锁这台 Mac：请给 Broker 设置密码，最好使用 TLS。",
+  "unlockDescription": "Home Assistant 请求时，Mac2MQTT 会在锁屏界面替你键入登录密码。重启后 FileVault 要求输入密码时无法使用。任何能向你的 Broker 发消息的人都能解锁这台 Mac；开启 PIN 后，还需要知道 PIN。",
   "unlockLabel": "允许从 Home Assistant 解锁",
   "unlockHelp": "在 Home Assistant 中把屏幕显示为可锁定、也可解锁的锁。",
   "unlockNotReady": "保存登录密码和 PIN 后生效。",
@@ -288,5 +288,9 @@
   "unlockResultNoAccess": "Mac2MQTT 没有键入权限。请在辅助功能中允许，然后退出并重新打开 App。",
   "unlockResultNotOnConsole": "另一位用户正在使用这台 Mac。",
   "unlockResultStillLocked": "已键入密码，但屏幕仍然锁定。请检查登录密码；如果刚允许了辅助功能，请退出并重新打开 Mac2MQTT。",
-  "unlockResultMeanwhile": "屏幕在此期间已被解锁。"
+  "unlockResultMeanwhile": "屏幕在此期间已被解锁。",
+  "unlockNotReadyWithoutPIN": "保存登录密码后生效。",
+  "requirePINLabel": "需要 PIN",
+  "requirePINHelp": "解锁时 Home Assistant 会要求输入。",
+  "requirePINOffHelp": "关闭后，任何能向 Broker 发消息的设备都能解锁这台 Mac，适合可信的局域网。"
 }

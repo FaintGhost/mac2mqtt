@@ -2650,11 +2650,11 @@ func (msgs Messages) UnlockTitle() string {
 	return Catalog.Format(msgs.locale, "unlockTitle", nil)
 }
 
-// UnlockDescription says "Home Assistant asks for the PIN, then Mac2MQTT types your login password into the lock screen. Not after a restart, w…"
+// UnlockDescription says "Mac2MQTT types your login password into the lock screen when Home Assistant asks. Not after a restart, while FileVaul…"
 // in the language the app shows.
 func UnlockDescription() string { return In(i18n.Locale()).UnlockDescription() }
 
-// UnlockDescription says "Home Assistant asks for the PIN, then Mac2MQTT types your login password into the lock screen. Not after a restart, w…"
+// UnlockDescription says "Mac2MQTT types your login password into the lock screen when Home Assistant asks. Not after a restart, while FileVaul…"
 // in the language of msgs.
 func (msgs Messages) UnlockDescription() string {
 	return Catalog.Format(msgs.locale, "unlockDescription", nil)
@@ -2930,4 +2930,44 @@ func UnlockResultMeanwhile() string { return In(i18n.Locale()).UnlockResultMeanw
 // in the language of msgs.
 func (msgs Messages) UnlockResultMeanwhile() string {
 	return Catalog.Format(msgs.locale, "unlockResultMeanwhile", nil)
+}
+
+// UnlockNotReadyWithoutPIN says "Save the login password to turn it on."
+// in the language the app shows.
+func UnlockNotReadyWithoutPIN() string { return In(i18n.Locale()).UnlockNotReadyWithoutPIN() }
+
+// UnlockNotReadyWithoutPIN says "Save the login password to turn it on."
+// in the language of msgs.
+func (msgs Messages) UnlockNotReadyWithoutPIN() string {
+	return Catalog.Format(msgs.locale, "unlockNotReadyWithoutPIN", nil)
+}
+
+// RequirePINLabel says "Require PIN"
+// in the language the app shows.
+func RequirePINLabel() string { return In(i18n.Locale()).RequirePINLabel() }
+
+// RequirePINLabel says "Require PIN"
+// in the language of msgs.
+func (msgs Messages) RequirePINLabel() string {
+	return Catalog.Format(msgs.locale, "requirePINLabel", nil)
+}
+
+// RequirePINHelp says "Home Assistant asks for it to unlock."
+// in the language the app shows.
+func RequirePINHelp() string { return In(i18n.Locale()).RequirePINHelp() }
+
+// RequirePINHelp says "Home Assistant asks for it to unlock."
+// in the language of msgs.
+func (msgs Messages) RequirePINHelp() string {
+	return Catalog.Format(msgs.locale, "requirePINHelp", nil)
+}
+
+// RequirePINOffHelp says "Off, anything that can publish to the broker unlocks this Mac: for a network you trust."
+// in the language the app shows.
+func RequirePINOffHelp() string { return In(i18n.Locale()).RequirePINOffHelp() }
+
+// RequirePINOffHelp says "Off, anything that can publish to the broker unlocks this Mac: for a network you trust."
+// in the language of msgs.
+func (msgs Messages) RequirePINOffHelp() string {
+	return Catalog.Format(msgs.locale, "requirePINOffHelp", nil)
 }

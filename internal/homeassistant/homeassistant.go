@@ -87,6 +87,8 @@ type Options struct {
 	// Unlock publishes the screen as a lock that unlocks too, with a PIN,
 	// in place of the Screen Lock sensor and the Lock Screen button.
 	Unlock bool
+	// UnlockWithoutPIN leaves the PIN out: Home Assistant does not ask.
+	UnlockWithoutPIN bool
 }
 
 const (
@@ -251,13 +253,7 @@ func allEntities(opts Options) []Entity {
 		// With remote unlocking on, the sensor and the button above as one
 		// lock. Home Assistant asks for a code matching code_format to lock
 		// as well, but only unlocking checks it is the PIN.
-		state(GroupSession, "lock", "screen_lock", "Screen Lock", map[string]any{
-			"value_template":   stateScreenLock,
-			"command_topic":    joinTopic(base, "screen/set"),
-			"command_template": "{{ {'action': value, 'code': code} | to_json }}",
-			"code_format":      UnlockPINFormat,
-			"icon":             "mdi:monitor-lock",
-		}),
+		state(GroupSession, "lock", "screen_lock", "Screen Lock", screenLockConfig(opts, base)),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "display_sleep", "Sleep Display", "DISPLAY_SLEEP", "mdi:monitor-off"),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "display_wake", "Wake Display", "DISPLAY_WAKE", "mdi:monitor-eye"),
 		commandButton(opts, availabilityTopic, base, GroupSession, "system/command", "sleep", "Sleep", "SLEEP", "mdi:power-sleep"),
@@ -372,6 +368,21 @@ func allEntities(opts Options) []Entity {
 			}),
 		},
 	}
+}
+
+// screenLockConfig describes the Screen Lock lock: with its PIN, unless
+// it unlocks without.
+func screenLockConfig(opts Options, base string) map[string]any {
+	cfg := map[string]any{
+		"value_template":   stateScreenLock,
+		"command_topic":    joinTopic(base, "screen/set"),
+		"command_template": "{{ {'action': value, 'code': code} | to_json }}",
+		"icon":             "mdi:monitor-lock",
+	}
+	if !opts.UnlockWithoutPIN {
+		cfg["code_format"] = UnlockPINFormat
+	}
+	return cfg
 }
 
 // commandButton is a button sending a command to one of the app's

@@ -365,3 +365,17 @@ func TestAudioOutputOffersTheOutputs(t *testing.T) {
 	}
 	t.Error("no Audio Output select")
 }
+
+func TestUnlockWithoutPINAsksForNoCode(t *testing.T) {
+	opts := testOptions()
+	opts.Unlock, opts.UnlockWithoutPIN = true, true
+	for _, entity := range SystemEntities(opts) {
+		if entity.Component == "lock" {
+			if _, ok := entity.Config["code_format"]; ok {
+				t.Errorf("the lock asks for a code: %v", entity.Config["code_format"])
+			}
+			return
+		}
+	}
+	t.Error("no lock")
+}

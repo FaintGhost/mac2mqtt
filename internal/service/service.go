@@ -953,6 +953,8 @@ func (m *Manager) entityOptions(probe system.Snapshot) homeassistant.Options {
 		HasMicrophone: m.lastActivity.HasMicrophone,
 		Outputs:       m.lastActivity.OutputNames(),
 		Unlock:        m.opts.UnlockScreen != nil,
+		// What the app's UnlockScreen checks, Home Assistant asks for.
+		UnlockWithoutPIN: cfg.HomeAssistant.UnlockWithoutPIN,
 	}
 }
 

@@ -81,8 +81,12 @@ type app struct {
 
 	// Remote unlocking: whether the Keychain has what it needs, and what
 	// Settings is typing in.
-	unlocker       *unlocker
-	unlockReady    bool
+	unlocker          *unlocker
+	unlockHasPassword bool
+	unlockHasPIN      bool
+	// requirePIN is the Require PIN switch, the opposite of
+	// UnlockWithoutPIN.
+	requirePIN     bool
 	unlockPassword string
 	unlockPIN      string
 	unlockSaving   bool
@@ -200,6 +204,7 @@ func (a *app) applyConfig(cfg config.Config) {
 	a.draft = cfg
 	a.editPort = float64(cfg.Broker.Port)
 	a.editInterval = float64(cfg.Reporting.IntervalSeconds)
+	a.requirePIN = !cfg.HomeAssistant.UnlockWithoutPIN
 	a.publishing = make([]bool, len(entityGroups))
 	for i, g := range entityGroups {
 		a.publishing[i] = cfg.HomeAssistant.Publishes(g.id)
@@ -623,11 +628,12 @@ func (a *app) restartServiceNow(cfg config.Config, cleanup []string) {
 	}
 
 	// Home Assistant gets a lock that unlocks once the Keychain has the
-	// PIN and the login password.
+	// login password, and the PIN unless it unlocks without.
 	var unlockScreen func(context.Context, string) error
-	if cfg.HomeAssistant.RemoteUnlock && a.unlocker.ready() {
+	withoutPIN := cfg.HomeAssistant.UnlockWithoutPIN
+	if cfg.HomeAssistant.RemoteUnlock && a.unlocker.ready(withoutPIN) {
 		unlockScreen = func(ctx context.Context, code string) error {
-			err := a.unlocker.Unlock(ctx, code)
+			err := a.unlocker.Unlock(ctx, code, withoutPIN)
 			a.unlockAttempted(err)
 			return err
 		}

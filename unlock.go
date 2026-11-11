@@ -59,20 +59,29 @@ type unlocker struct {
 	until    time.Time
 }
 
-// ready reports whether the PIN and the login password are stored.
-func (u *unlocker) ready() bool {
-	for _, key := range []string{secretUnlockPIN, secretLoginPassword} {
-		if v, err := u.secrets.Get(key); err != nil || len(v) == 0 {
-			return false
-		}
+// stored reports whether the login password and the PIN are stored.
+func (u *unlocker) stored() (password, pin bool) {
+	has := func(key string) bool {
+		v, err := u.secrets.Get(key)
+		return err == nil && len(v) > 0
 	}
-	return true
+	return has(secretLoginPassword), has(secretUnlockPIN)
 }
 
-// Unlock unlocks the screen when code is the PIN.
-func (u *unlocker) Unlock(ctx context.Context, code string) error {
-	if err := u.checkPIN(code); err != nil {
-		return err
+// ready reports whether what unlocking needs is stored: the login
+// password, and the PIN unless it unlocks without.
+func (u *unlocker) ready(withoutPIN bool) bool {
+	password, pin := u.stored()
+	return password && (pin || withoutPIN)
+}
+
+// Unlock unlocks the screen when code is the PIN, or whatever it is when
+// it unlocks without.
+func (u *unlocker) Unlock(ctx context.Context, code string, withoutPIN bool) error {
+	if !withoutPIN {
+		if err := u.checkPIN(code); err != nil {
+			return err
+		}
 	}
 	password, err := u.secrets.Get(secretLoginPassword)
 	if err != nil || len(password) == 0 {
@@ -132,15 +141,25 @@ func (u *unlocker) forget() error {
 // thread: the Keychain may ask the user first.
 func (a *app) loadUnlock() {
 	go func() {
-		ready := a.unlocker.ready()
-		a.ui(func() { a.unlockReady = ready })
+		password, pin := a.unlocker.stored()
+		a.ui(func() { a.unlockHasPassword, a.unlockHasPIN = password, pin })
 	}()
+}
+
+// unlockReady reports whether the Keychain has what unlocking needs, as
+// Settings has it.
+func (a *app) unlockReady() bool {
+	return a.unlockHasPassword && (a.unlockHasPIN || a.draft.HomeAssistant.UnlockWithoutPIN)
 }
 
 // saveUnlock stores the login password and the PIN as typed, and
 // publishes the lock when they make unlocking ready.
 func (a *app) saveUnlock() {
 	password, pin := a.unlockPassword, a.unlockPIN
+	if !a.requirePIN {
+		// Hidden with the switch off: what it held stays unsaved.
+		pin = ""
+	}
 	if pin != "" && !validPIN.MatchString(pin) {
 		a.unlockNote, a.unlockFailed = locales.UnlockInvalidPIN(), true
 		return
@@ -148,7 +167,7 @@ func (a *app) saveUnlock() {
 	a.unlockSaving = true
 	go func() {
 		err := a.unlocker.save(password, pin)
-		ready := a.unlocker.ready()
+		hasPassword, hasPIN := a.unlocker.stored()
 		a.ui(func() {
 			a.unlockSaving = false
 			if err != nil {
@@ -157,8 +176,9 @@ func (a *app) saveUnlock() {
 			}
 			a.unlockPassword, a.unlockPIN = "", ""
 			a.unlockNote, a.unlockFailed = locales.UnlockSaved(), false
-			if ready != a.unlockReady {
-				a.unlockReady = ready
+			wasReady := a.unlockReady()
+			a.unlockHasPassword, a.unlockHasPIN = hasPassword, hasPIN
+			if a.unlockReady() != wasReady {
 				a.restartService()
 			}
 		})
@@ -176,8 +196,9 @@ func (a *app) forgetUnlock() {
 			if err != nil {
 				a.unlockNote, a.unlockFailed = locales.UnlockSaveFailed(err.Error()), true
 			}
-			if a.unlockReady {
-				a.unlockReady = false
+			wasReady := a.unlockReady()
+			a.unlockHasPassword, a.unlockHasPIN = false, false
+			if wasReady {
 				a.restartService()
 			}
 		})

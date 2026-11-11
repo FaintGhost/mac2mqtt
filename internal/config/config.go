@@ -57,6 +57,9 @@ type HomeAssistant struct {
 	// RemoteUnlock lets Home Assistant unlock the screen with a PIN. The
 	// PIN and the login password are in the Keychain, not here.
 	RemoteUnlock bool `json:"remote_unlock,omitempty"`
+	// UnlockWithoutPIN unlocks without asking for the PIN: on a network
+	// the user trusts, anyone who can publish to the broker may unlock.
+	UnlockWithoutPIN bool `json:"unlock_without_pin,omitempty"`
 }
 
 // OptInGroups are the entity groups published only when the user turns

@@ -263,8 +263,11 @@ func (a *app) testRow(c *ui.Context, t *ui.Theme) {
 func (a *app) unlockSection(c *ui.Context, t *ui.Theme, p palette) {
 	section(c, t, p, locales.UnlockTitle(), locales.UnlockDescription(), func() {
 		help := locales.UnlockHelp()
-		if a.draft.HomeAssistant.RemoteUnlock && !a.unlockReady {
+		if a.draft.HomeAssistant.RemoteUnlock && !a.unlockReady() {
 			help = locales.UnlockNotReady()
+			if a.draft.HomeAssistant.UnlockWithoutPIN {
+				help = locales.UnlockNotReadyWithoutPIN()
+			}
 		}
 		row(c, t, locales.UnlockLabel(), help, func() {
 			ui.Switch(c, &a.draft.HomeAssistant.RemoteUnlock).Label(locales.UnlockLabel())
@@ -281,16 +284,33 @@ func (a *app) unlockSection(c *ui.Context, t *ui.Theme, p palette) {
 					ui.Button(c, locales.AllowKeyAccess()).OnClick(requestKeyAccess)
 				})
 			}
-			placeholder := locales.UnlockRequired()
-			if a.unlockReady {
-				placeholder = locales.UnlockStored()
+			placeholder := func(stored bool) string {
+				if stored {
+					return locales.UnlockStored()
+				}
+				return locales.UnlockRequired()
 			}
 			row(c, t, locales.LoginPasswordLabel(), locales.LoginPasswordHelp(), func() {
-				ui.TextInput(c, &a.unlockPassword).Password().Placeholder(placeholder).Width(fieldWidth)
+				ui.TextInput(c, &a.unlockPassword).Password().Placeholder(placeholder(a.unlockHasPassword)).Width(fieldWidth)
 			})
-			row(c, t, locales.UnlockPINLabel(), locales.UnlockPINHelp(), func() {
-				ui.TextInput(c, &a.unlockPIN).Password().Placeholder(placeholder).Width(fieldWidth)
+			pinHelp := locales.RequirePINHelp()
+			if !a.requirePIN {
+				pinHelp = locales.RequirePINOffHelp()
+			}
+			row(c, t, locales.RequirePINLabel(), pinHelp, func() {
+				if ui.Switch(c, &a.requirePIN).Label(locales.RequirePINLabel()).Changed() {
+					// Home Assistant shows the lock with a keypad, or without.
+					a.draft.HomeAssistant.UnlockWithoutPIN = !a.requirePIN
+				}
 			})
+			if a.requirePIN {
+				c.Key("unlock-pin")
+				ui.Column(c).FillWidth().Transition(rowCollapse).Children(func() {
+					row(c, t, locales.UnlockPINLabel(), locales.UnlockPINHelp(), func() {
+						ui.TextInput(c, &a.unlockPIN).Password().Placeholder(placeholder(a.unlockHasPIN)).Width(fieldWidth)
+					})
+				})
+			}
 			ui.Row(c).FillWidth().MinHeight(44).Padding(8, 14).Gap(8).AlignItems(ui.Center).Children(func() {
 				color := t.TextMuted
 				if a.unlockFailed {
@@ -304,12 +324,18 @@ func (a *app) unlockSection(c *ui.Context, t *ui.Theme, p palette) {
 					}
 				}
 				ui.Text(c, note).FontSize(11).TextColor(color).Wrap().Grow(1).Shrink(1).MinWidth(0).ContentTransition(crossfade)
-				if a.unlockReady {
+				if a.unlockHasPassword || a.unlockHasPIN {
 					ui.Button(c, locales.ForgetUnlock()).Disabled(a.unlockSaving).OnClick(a.forgetUnlock)
 				}
-				// Both are needed the first time; after, either changes alone.
-				typed := a.unlockPassword != "" && a.unlockPIN != "" ||
-					a.unlockReady && (a.unlockPassword != "" || a.unlockPIN != "")
+				// What is missing must be typed; what is stored may change alone.
+				pin := a.unlockPIN
+				if !a.requirePIN {
+					pin = ""
+				}
+				needPassword := !a.unlockHasPassword
+				needPIN := a.requirePIN && !a.unlockHasPIN
+				typed := (a.unlockPassword != "" || pin != "") &&
+					(!needPassword || a.unlockPassword != "") && (!needPIN || pin != "")
 				ui.PrimaryButton(c, locales.SaveUnlock()).Disabled(a.unlockSaving || !typed).OnClick(a.saveUnlock)
 			})
 		})

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Remote unlock can do without the PIN: turn off Require PIN, and Home
+  Assistant unlocks the Mac without asking, for a network you trust.
+
 ## 0.4.13
 
 - With remote unlock on, the lock takes the Lock Screen button's place

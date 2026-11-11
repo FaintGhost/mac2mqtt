@@ -143,7 +143,9 @@ data:
 ```
 
 Home Assistant asks for a code to lock it as well, but only unlocking
-checks it is the PIN. It types only into a locked screen of
+checks it is the PIN. On a network you trust, turn off **Require PIN**: Home Assistant then
+unlocks without asking, and anything that can publish to the broker can
+unlock the Mac. It types only into a locked screen of
 your session, once per command, and
 five wrong PINs pause it for 15 minutes. It cannot unlock after a restart,
 while FileVault asks for the password. Anyone who knows the PIN and can

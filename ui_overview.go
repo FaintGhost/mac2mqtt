@@ -118,12 +118,13 @@ func statusFact(c *ui.Context, t *ui.Theme, label, value string) {
 // current settings, on this Mac.
 func (a *app) publishedEntities() []homeassistant.Entity {
 	return homeassistant.SystemEntities(homeassistant.Options{
-		BaseTopic:     a.cfg.HomeAssistant.BaseTopic,
-		HasBattery:    a.hasBattery(),
-		HasCamera:     a.latest.Activity.HasCamera,
-		HasMicrophone: a.latest.Activity.HasMicrophone,
-		Disabled:      a.cfg.HomeAssistant.Disabled(),
-		Unlock:        a.cfg.HomeAssistant.RemoteUnlock && a.unlockReady,
+		BaseTopic:        a.cfg.HomeAssistant.BaseTopic,
+		HasBattery:       a.hasBattery(),
+		HasCamera:        a.latest.Activity.HasCamera,
+		HasMicrophone:    a.latest.Activity.HasMicrophone,
+		Disabled:         a.cfg.HomeAssistant.Disabled(),
+		Unlock:           a.cfg.HomeAssistant.RemoteUnlock && a.unlockReady(),
+		UnlockWithoutPIN: a.cfg.HomeAssistant.UnlockWithoutPIN,
 	})
 }
 

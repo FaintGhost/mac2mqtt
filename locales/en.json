@@ -389,7 +389,7 @@
   "testSucceeded": "Connected to {address}.",
   "testFailed": "Couldn't connect: {error}",
   "unlockTitle": "Remote Unlock",
-  "unlockDescription": "Home Assistant asks for the PIN, then Mac2MQTT types your login password into the lock screen. Not after a restart, while FileVault asks for the password. Anyone who knows the PIN and can publish to your broker can unlock this Mac: use a broker with a password, ideally over TLS.",
+  "unlockDescription": "Mac2MQTT types your login password into the lock screen when Home Assistant asks. Not after a restart, while FileVault asks for the password. Anyone who can publish to your broker can unlock this Mac, and with a PIN only if they know it too.",
   "unlockLabel": "Unlock from Home Assistant",
   "unlockHelp": "Shows the screen as a lock that also unlocks.",
   "unlockNotReady": "Save the login password and a PIN to turn it on.",
@@ -416,5 +416,9 @@
   "unlockResultNoAccess": "Mac2MQTT isn't allowed to type. Allow it in Accessibility, then quit and reopen the app.",
   "unlockResultNotOnConsole": "another user is using the Mac.",
   "unlockResultStillLocked": "the password was typed, but the screen stayed locked. Check the login password; if you just allowed Accessibility, quit and reopen Mac2MQTT.",
-  "unlockResultMeanwhile": "the screen was unlocked meanwhile."
+  "unlockResultMeanwhile": "the screen was unlocked meanwhile.",
+  "unlockNotReadyWithoutPIN": "Save the login password to turn it on.",
+  "requirePINLabel": "Require PIN",
+  "requirePINHelp": "Home Assistant asks for it to unlock.",
+  "requirePINOffHelp": "Off, anything that can publish to the broker unlocks this Mac: for a network you trust."
 }
