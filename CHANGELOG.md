@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.13
 
 - With remote unlock on, the lock takes the Lock Screen button's place
   too, so Home Assistant no longer shows both. Locking asks for a code,
