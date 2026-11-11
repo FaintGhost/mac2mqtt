@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.12
 
 - Remote unlock, off by default: Home Assistant unlocks the screen with
   a PIN, and Mac2MQTT types the login password into the lock screen, as
