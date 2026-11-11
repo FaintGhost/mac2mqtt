@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.14
 
 - Remote unlock can do without the PIN: turn off Require PIN, and Home
   Assistant unlocks the Mac without asking, for a network you trust.
