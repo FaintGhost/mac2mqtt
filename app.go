@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"image/png"
 	"log"
 	"path/filepath"
@@ -36,10 +37,13 @@ type app struct {
 	editPort     float64
 	editInterval float64
 
-	win    *mygo.Window
-	tray   *mygo.Tray
-	tab    int
-	latest system.Snapshot
+	win  *mygo.Window
+	tray *mygo.Tray
+	// openTrayMenu is retained only while the popup is tracking. Its items
+	// update in place so KeepOpen actions show their new state immediately.
+	openTrayMenu *mygo.Menu
+	tab          int
+	latest       system.Snapshot
 
 	mqttStatus    service.Status
 	settingsError string
@@ -247,6 +251,7 @@ func (a *app) setOpenAtLogin(open bool) {
 		a.loginError = locales.ErrorOpenAtLogin(err.Error())
 	}
 	a.openAtLogin = mygo.App.OpenAtLogin() || a.loginNeedsApproval
+	a.updateOpenTrayMenu()
 }
 
 // readOpenAtLogin reads whether the app opens at login, as the user may
@@ -337,8 +342,12 @@ func (a *app) createTray() {
 	// Either click opens the menu, as a menu bar extra's does; the menu is
 	// built as it opens, so it shows the current state.
 	popUp := func() {
-		a.tray.SetMenu(a.trayMenu())
-		defer a.tray.SetMenu(nil)
+		a.openTrayMenu = a.trayMenu()
+		a.tray.SetMenu(a.openTrayMenu)
+		defer func() {
+			a.openTrayMenu = nil
+			a.tray.SetMenu(nil)
+		}()
 		a.tray.PopUpMenu()
 	}
 	a.tray.OnClick(popUp)
@@ -356,7 +365,11 @@ func (a *app) trayMenu() *mygo.Menu {
 	if configured {
 		broker = a.cfg.BrokerAddress()
 	}
-	items := []*mygo.MenuItem{{Label: st.label, Subtitle: broker, Icon: a.statusDot(st.color), Click: open}}
+	items := []*mygo.MenuItem{{
+		ID: "status", Label: locales.AppName(), Subtitle: broker,
+		Icon: a.statusDot(st.color), Click: open,
+		Badge: st.label, BadgeShape: mygo.BadgeShapeSquare, BadgeColor: menuBadgeColor(st.color),
+	}}
 	if m := a.latest.Media; m != nil {
 		items = append(items, &mygo.MenuItem{Label: truncate(m.Title, 40), Subtitle: truncate(m.Artist, 40), Icon: a.menuIcon(iconMusic), Click: open})
 	}
@@ -373,11 +386,11 @@ func (a *app) trayMenu() *mygo.Menu {
 	items = append(items,
 		mygo.Separator(),
 		&mygo.MenuItem{Label: locales.MenuOpenApp(), Icon: a.menuIcon(iconOverview), Click: func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }},
-		&mygo.MenuItem{Label: locales.MenuPublishNow(), Icon: a.menuIcon(iconSend), Disabled: st.phase != service.PhaseOnline, Click: func(*mygo.MenuItem, *mygo.Window) { a.publishNow() }},
-		&mygo.MenuItem{Label: locales.MenuReconnect(), Icon: a.menuIcon(iconRefresh), Disabled: !configured || !a.cfg.Reporting.Enabled, Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
-		&mygo.MenuItem{Label: pause, Icon: a.menuIcon(pauseGlyph), Disabled: !configured, Click: func(*mygo.MenuItem, *mygo.Window) { a.setReporting(!a.cfg.Reporting.Enabled) }},
+		&mygo.MenuItem{ID: "publish", KeepOpen: true, Label: locales.MenuPublishNow(), Icon: a.menuIcon(iconSend), Disabled: st.phase != service.PhaseOnline, Click: func(*mygo.MenuItem, *mygo.Window) { a.publishNow() }},
+		&mygo.MenuItem{ID: "reconnect", KeepOpen: true, Label: locales.MenuReconnect(), Icon: a.menuIcon(iconRefresh), Disabled: !configured || !a.cfg.Reporting.Enabled, Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
+		&mygo.MenuItem{ID: "reporting", KeepOpen: true, Label: pause, Icon: a.menuIcon(pauseGlyph), Disabled: !configured, Click: func(*mygo.MenuItem, *mygo.Window) { a.setReporting(!a.cfg.Reporting.Enabled) }},
 		mygo.Separator(),
-		&mygo.MenuItem{Label: locales.OpenAtLoginLabel(), Type: mygo.MenuItemCheckbox, Checked: a.openAtLogin, Icon: a.menuIcon(iconLogin), Click: func(item *mygo.MenuItem, _ *mygo.Window) {
+		&mygo.MenuItem{ID: "login", KeepOpen: true, Label: locales.OpenAtLoginLabel(), Type: mygo.MenuItemCheckbox, Checked: a.openAtLogin, Icon: a.menuIcon(iconLogin), Click: func(item *mygo.MenuItem, _ *mygo.Window) {
 			a.setOpenAtLogin(item.Checked)
 			if a.loginNeedsApproval {
 				openLoginItems()
@@ -391,8 +404,45 @@ func (a *app) trayMenu() *mygo.Menu {
 	return mygo.NewMenu(items)
 }
 
+func menuBadgeColor(color ui.Color) string {
+	return fmt.Sprintf("#%02x%02x%02x", color.R, color.G, color.B)
+}
+
+// updateOpenTrayMenu keeps a visible menu consistent with configuration and
+// asynchronous MQTT status changes without replacing the menu under the user.
+func (a *app) updateOpenTrayMenu() {
+	menu := a.openTrayMenu
+	if menu == nil {
+		return
+	}
+	st := a.status()
+	configured := strings.TrimSpace(a.cfg.Broker.Host) != ""
+	broker := ""
+	if configured {
+		broker = a.cfg.BrokerAddress()
+	}
+	status := menu.ItemByID("status")
+	status.SetBadge(st.label)
+	status.SetBadgeColor(menuBadgeColor(st.color))
+	status.SetIcon(a.statusDot(st.color))
+	status.SetSubtitle(broker)
+	menu.ItemByID("publish").SetEnabled(st.phase == service.PhaseOnline)
+	menu.ItemByID("reconnect").SetEnabled(configured && a.cfg.Reporting.Enabled)
+	reporting := menu.ItemByID("reporting")
+	reporting.SetEnabled(configured)
+	if a.cfg.Reporting.Enabled {
+		reporting.SetLabel(locales.MenuPauseReporting())
+		reporting.SetIcon(a.menuIcon(iconPause))
+	} else {
+		reporting.SetLabel(locales.MenuResumeReporting())
+		reporting.SetIcon(a.menuIcon(iconPlay))
+	}
+	menu.ItemByID("login").SetChecked(a.openAtLogin)
+}
+
 // setReporting pauses or resumes reporting from the tray, saving it.
 func (a *app) setReporting(on bool) {
+	defer a.updateTray()
 	a.cfg.Reporting.Enabled = on
 	a.draft.Reporting.Enabled = on
 	if a.cfg.Validate() != nil {
@@ -407,6 +457,7 @@ func (a *app) setReporting(on bool) {
 // updateTray shows in the menu bar whether reports reach the broker: the
 // icon dims while they do not.
 func (a *app) updateTray() {
+	a.updateOpenTrayMenu()
 	if a.tray == nil {
 		return
 	}

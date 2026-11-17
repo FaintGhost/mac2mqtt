@@ -3,22 +3,25 @@ package system
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync"
 	"time"
 )
 
 var (
-	// ErrNoKeyAccess is UnlockScreen's error while the app may not post key
-	// events: macOS lets it once Accessibility allows it.
+	// ErrNoKeyAccess means Accessibility does not allow lock-screen input.
 	ErrNoKeyAccess = errors.New("system: Mac2MQTT is not allowed to type (Accessibility)")
-	// ErrNotOnConsole is UnlockScreen's error while another user is at the
-	// Mac: what it typed would go to their session.
+	// ErrNotOnConsole means another user's session is on the console.
 	ErrNotOnConsole = errors.New("system: another user is using the Mac")
-	// ErrStillLocked is UnlockScreen's error when the screen stayed locked
-	// after it typed the password, as a wrong one leaves it.
+	// ErrStillLocked means the one password submission did not unlock the screen.
 	ErrStillLocked = errors.New("system: the screen stayed locked, check the password")
-	// ErrUnlockedMeanwhile is UnlockScreen's error when the screen was
-	// unlocked as it typed, which it then stopped.
+	// ErrUnlockedMeanwhile means input stopped because the screen unlocked.
 	ErrUnlockedMeanwhile = errors.New("system: the screen was unlocked meanwhile")
+	// ErrNoPasswordField means the login window has no focused secure text field.
+	ErrNoPasswordField = errors.New("system: the lock screen password field is not ready")
+	// ErrPasswordInput means loginwindow did not confirm the expected input length.
+	ErrPasswordInput    = errors.New("system: the password field did not accept the complete input")
+	ErrUnlockInProgress = errors.New("system: an unlock is already in progress")
 )
 
 // screenState is this session's lock state, as the window server tells it.
@@ -27,22 +30,29 @@ type screenState struct {
 	OnConsole bool
 }
 
-// keyTyper types into the frontmost thing of the Mac, the lock screen's
-// password field while the screen is locked.
+// passwordField belongs to loginwindow. Its identity is retained for one
+// attempt, so a focus change cannot redirect password input to another field.
+type passwordField interface {
+	Focused() (bool, error)
+	SetValue(string) error
+	ValueHasLength(string) (bool, error)
+	Close()
+}
+
 type keyTyper interface {
-	// Allowed reports whether the app may post key events.
 	Allowed() bool
-	// Type types one character, and Return types the Return key.
-	Type(r rune)
-	Return()
-	// State reads this session's lock state.
 	State() (screenState, error)
+	PasswordField() (passwordField, error)
+	Type(rune) error
+	Key(code uint16, flags uint64) error
 }
 
 // Native typing, and the pause between steps; variables for tests.
 var (
-	typer      keyTyper = nativeTyper{}
-	unlockWait          = func(ctx context.Context, d time.Duration) bool {
+	typer keyTyper = nativeTyper{}
+	// The keyboard is shared even between different Controller instances.
+	unlockMu   sync.Mutex
+	unlockWait = func(ctx context.Context, d time.Duration) bool {
 		t := time.NewTimer(d)
 		defer t.Stop()
 		select {
@@ -55,37 +65,48 @@ var (
 )
 
 const (
-	// unlockWake is how long the lock screen takes to show its password
-	// field once the display wakes.
-	unlockWake = 1500 * time.Millisecond
-	// unlockKeyGap spaces the keys as fast typing would.
-	unlockKeyGap = 20 * time.Millisecond
-	// unlockCheck and unlockChecks bound the wait for the screen to unlock.
-	unlockCheck  = 250 * time.Millisecond
-	unlockChecks = 24
+	keyA        = 0
+	keyReturn   = 36
+	keyDelete   = 51
+	keyShift    = 56
+	flagCommand = 1 << 20
+
+	unlockKeyGap      = 20 * time.Millisecond
+	unlockReadyCheck  = 100 * time.Millisecond
+	unlockReadyChecks = 30
+	unlockValueCheck  = 50 * time.Millisecond
+	unlockClearChecks = 20
+	unlockValueChecks = 40
+	unlockCheck       = 250 * time.Millisecond
+	unlockChecks      = 28
 )
 
-// KeyAccess reports whether the app may type, which UnlockScreen needs.
 func KeyAccess() bool { return typer.Allowed() }
 
-// RequestKeyAccess asks macOS to let the app type, which shows the
-// Accessibility settings with the app in them. It reports whether it may.
+// RequestKeyAccess asks macOS to allow input through Accessibility.
 func RequestKeyAccess() bool { return requestKeyAccess() }
 
-// UnlockScreen wakes the display and types password into the lock
-// screen, then waits for the screen to unlock. It types once: retrying a
-// wrong password would get the account locked out. A screen not locked is
-// left alone, without typing.
+// UnlockScreen waits for loginwindow's password field, replaces its contents,
+// and submits once. It never retries authentication. A missing field, changed
+// focus, switched session or canceled request stops input before submission.
 func (c *Controller) UnlockScreen(ctx context.Context, password string) error {
 	if c.goos != "darwin" {
 		return ErrUnsupported
 	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if !unlockMu.TryLock() {
+		return ErrUnlockInProgress
+	}
+	defer unlockMu.Unlock()
 	if !typer.Allowed() {
 		return ErrNoKeyAccess
 	}
-	// Typed only into a locked screen of this session: anywhere else the
-	// password would go into the app in front, or another user's session.
 	locked := func() (bool, error) {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
 		s, err := typer.State()
 		switch {
 		case err != nil:
@@ -105,31 +126,163 @@ func (c *Controller) UnlockScreen(ctx context.Context, password string) error {
 	if ok, err := locked(); err != nil || !ok {
 		return err
 	}
-	// Declaring the user active wakes the display, as a key press does.
 	if _, err := runCommand(ctx, c.runner, "/usr/bin/caffeinate", "-u", "-t", "1"); err != nil {
 		return err
-	}
-	if !unlockWait(ctx, unlockWake) {
-		return ctx.Err()
-	}
-	for _, r := range password {
-		if err := stillLocked(); err != nil {
-			return err
-		}
-		typer.Type(r)
-		unlockWait(ctx, unlockKeyGap)
 	}
 	if err := stillLocked(); err != nil {
 		return err
 	}
-	typer.Return()
+	// Reveal the password prompt without submitting any text left in it.
+	if err := typer.Key(keyShift, 0); err != nil {
+		return err
+	}
+	field, err := waitPasswordField(ctx, stillLocked)
+	if err != nil {
+		return err
+	}
+	defer field.Close()
+	focused := func() error {
+		if err := stillLocked(); err != nil {
+			return err
+		}
+		ok, err := field.Focused()
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return ErrNoPasswordField
+		}
+		// AX calls can wait on loginwindow; recheck after they return.
+		return stillLocked()
+	}
+	if err := focused(); err != nil {
+		return err
+	}
+	if err := replacePassword(ctx, field, password, focused); err != nil {
+		return err
+	}
+	if err := focused(); err != nil {
+		return err
+	}
+	if err := typer.Key(keyReturn, 0); err != nil {
+		return err
+	}
 	for range unlockChecks {
 		if !unlockWait(ctx, unlockCheck) {
 			return ctx.Err()
 		}
-		if s, err := typer.State(); err == nil && !s.Locked {
-			return nil
+		if ok, err := locked(); err != nil || !ok {
+			return err
 		}
 	}
 	return ErrStillLocked
+}
+
+func waitPasswordField(ctx context.Context, guard func() error) (passwordField, error) {
+	for range unlockReadyChecks {
+		if err := guard(); err != nil {
+			return nil, err
+		}
+		field, err := typer.PasswordField()
+		if err == nil {
+			return field, nil
+		}
+		if !errors.Is(err, ErrNoPasswordField) {
+			return nil, err
+		}
+		if !unlockWait(ctx, unlockReadyCheck) {
+			return nil, ctx.Err()
+		}
+	}
+	return nil, ErrNoPasswordField
+}
+
+func replacePassword(ctx context.Context, field passwordField, password string, guard func() error) error {
+	// Clear and confirm before inserting: loginwindow may still be updating
+	// the field after waking, and an AX success only acknowledges the call.
+	if err := field.SetValue(""); err != nil {
+		if errors.Is(err, ErrNoKeyAccess) {
+			return err
+		}
+		if err := clearPassword(ctx, guard); err != nil {
+			return err
+		}
+	}
+	if err := waitPasswordValue(ctx, field, "", unlockClearChecks, guard); err != nil {
+		return err
+	}
+	if err := guard(); err != nil {
+		return err
+	}
+	if err := field.SetValue(password); err != nil {
+		if errors.Is(err, ErrNoKeyAccess) {
+			return err
+		}
+		// A rejected AX write could have changed part of the value. Clear it
+		// again before the Unicode fallback, without submitting either value.
+		if err := clearPassword(ctx, guard); err != nil {
+			return err
+		}
+		if err := waitPasswordValue(ctx, field, "", unlockClearChecks, guard); err != nil {
+			return err
+		}
+		if err := typePassword(ctx, password, guard); err != nil {
+			return err
+		}
+	}
+	return waitPasswordValue(ctx, field, password, unlockValueChecks, guard)
+}
+
+func waitPasswordValue(ctx context.Context, field passwordField, password string, checks int, guard func() error) error {
+	for range checks {
+		if err := guard(); err != nil {
+			return err
+		}
+		ok, err := field.ValueHasLength(password)
+		if err != nil {
+			return fmt.Errorf("%w: %w", ErrPasswordInput, err)
+		}
+		if ok {
+			return nil
+		}
+		if !unlockWait(ctx, unlockValueCheck) {
+			return ctx.Err()
+		}
+	}
+	return ErrPasswordInput
+}
+
+func clearPassword(ctx context.Context, guard func() error) error {
+	// Select all and delete, including a partial prior input. Neither key
+	// submits a password. Each event pair releases its modifiers.
+	for _, key := range []struct {
+		code  uint16
+		flags uint64
+	}{{keyA, flagCommand}, {keyDelete, 0}} {
+		if err := guard(); err != nil {
+			return err
+		}
+		if err := typer.Key(key.code, key.flags); err != nil {
+			return err
+		}
+		if !unlockWait(ctx, unlockKeyGap) {
+			return ctx.Err()
+		}
+	}
+	return nil
+}
+
+func typePassword(ctx context.Context, password string, guard func() error) error {
+	for _, r := range password {
+		if err := guard(); err != nil {
+			return err
+		}
+		if err := typer.Type(r); err != nil {
+			return err
+		}
+		if !unlockWait(ctx, unlockKeyGap) {
+			return ctx.Err()
+		}
+	}
+	return nil
 }

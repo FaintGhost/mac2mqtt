@@ -49,6 +49,9 @@ itself, Liquid Glass included, in a single small binary with no webview.
 - **Reliable MQTT.** Retained state, availability with a last will, and
   reconnecting with backoff. Turning a group off, or changing topics, clears
   what Home Assistant no longer should show.
+- **Live menu bar controls.** A colored badge shows the MQTT connection.
+  Publish, reconnect, pause/resume and open-at-login actions keep the menu open,
+  with their state updated in place.
 - **A proper Mac app.** Lives in the menu bar, opens at login if you like,
   follows the system's light or dark appearance and language (English,
   简体中文, 繁體中文).
@@ -131,8 +134,13 @@ Accessibility (then quit and reopen the app, which macOS needs before it
 lets the app type), and save your login password and a PIN of four digits or
 more; both are kept in the Keychain. Home Assistant then shows the screen
 as a lock (`lock.<device>_screen_lock`): unlocking asks for the PIN, and
-Mac2MQTT wakes the display and types the password into the lock screen,
-as a remote desktop app would. An automation passes the PIN as `code`:
+Mac2MQTT wakes the display, waits for the system login window's secure password
+field to gain focus, clears existing text and confirms the expected input length
+before submitting once. It prefers Accessibility to set the value, with Unicode
+key events after clearing the field when direct writes are unavailable. A missing
+field, unconfirmed input, changed focus or canceled
+request stops input and reports the reason in Settings. Success is confirmed
+from the system's session state. An automation passes the PIN as `code`:
 
 ```yaml
 action: lock.unlock

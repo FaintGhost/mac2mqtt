@@ -532,10 +532,16 @@ func (m *Manager) commandWorker(ctx context.Context) {
 }
 
 func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
-	commandCtx, cancel := context.WithTimeout(ctx, 12*time.Second)
+	base := m.opts.Config.HomeAssistant.BaseTopic
+	timeout := 12 * time.Second
+	if req.msg.Topic == base+"/screen/set" {
+		// Unlocking waits for the password field, confirms its contents, then
+		// waits for loginwindow to authenticate. Keep that inside one command.
+		timeout = 20 * time.Second
+	}
+	commandCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	payload := strings.TrimSpace(string(req.msg.Payload))
-	base := m.opts.Config.HomeAssistant.BaseTopic
 	var err error
 	switch req.msg.Topic {
 	case base + "/volume/set":

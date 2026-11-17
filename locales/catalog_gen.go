@@ -2922,6 +2922,36 @@ func (msgs Messages) UnlockResultStillLocked() string {
 	return Catalog.Format(msgs.locale, "unlockResultStillLocked", nil)
 }
 
+// UnlockResultNoPasswordField says "the lock screen password field isn't ready or lost focus. Show the password prompt for your account, then try again."
+// in the language the app shows.
+func UnlockResultNoPasswordField() string { return In(i18n.Locale()).UnlockResultNoPasswordField() }
+
+// UnlockResultNoPasswordField says "the lock screen password field isn't ready or lost focus. Show the password prompt for your account, then try again."
+// in the language of msgs.
+func (msgs Messages) UnlockResultNoPasswordField() string {
+	return Catalog.Format(msgs.locale, "unlockResultNoPasswordField", nil)
+}
+
+// UnlockResultPasswordInput says "the password field didn't accept the complete input. Nothing was submitted; try again."
+// in the language the app shows.
+func UnlockResultPasswordInput() string { return In(i18n.Locale()).UnlockResultPasswordInput() }
+
+// UnlockResultPasswordInput says "the password field didn't accept the complete input. Nothing was submitted; try again."
+// in the language of msgs.
+func (msgs Messages) UnlockResultPasswordInput() string {
+	return Catalog.Format(msgs.locale, "unlockResultPasswordInput", nil)
+}
+
+// UnlockResultInProgress says "an unlock is already in progress."
+// in the language the app shows.
+func UnlockResultInProgress() string { return In(i18n.Locale()).UnlockResultInProgress() }
+
+// UnlockResultInProgress says "an unlock is already in progress."
+// in the language of msgs.
+func (msgs Messages) UnlockResultInProgress() string {
+	return Catalog.Format(msgs.locale, "unlockResultInProgress", nil)
+}
+
 // UnlockResultMeanwhile says "the screen was unlocked meanwhile."
 // in the language the app shows.
 func UnlockResultMeanwhile() string { return In(i18n.Locale()).UnlockResultMeanwhile() }

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Upgrade MyGo to [v0.9.2](https://github.com/egoist/mygo/releases/tag/v0.9.2),
+  including its single-instance handoff fix when relaunching or updating.
+- Tray actions for publishing, reconnecting, pausing/resuming and opening at
+  login keep the menu open on macOS. A colored connection badge and live
+  action updates show the current state without reopening the menu.
+- Remote unlock waits for loginwindow's secure password field, clears old
+  input and confirms the new input length before submitting once. AX value
+  writes are preferred, with a checked Unicode keyboard fallback. Cancellation,
+  focus changes, session switches and overlapping requests stop input safely.
+
 ## 0.4.14
 
 - Remote unlock can do without the PIN: turn off Require PIN, and Home

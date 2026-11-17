@@ -247,6 +247,12 @@ func unlockResultText(err error) string {
 		return locales.UnlockResultNotOnConsole()
 	case errors.Is(err, system.ErrStillLocked):
 		return locales.UnlockResultStillLocked()
+	case errors.Is(err, system.ErrPasswordInput):
+		return locales.UnlockResultPasswordInput()
+	case errors.Is(err, system.ErrNoPasswordField):
+		return locales.UnlockResultNoPasswordField()
+	case errors.Is(err, system.ErrUnlockInProgress):
+		return locales.UnlockResultInProgress()
 	case errors.Is(err, system.ErrUnlockedMeanwhile):
 		return locales.UnlockResultMeanwhile()
 	}
