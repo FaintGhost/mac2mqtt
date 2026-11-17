@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.16
 
 - Tray actions are native menu items again: the KeepOpen views drew their
   icons, labels and highlight out of line with the rest of the menu. Choosing
