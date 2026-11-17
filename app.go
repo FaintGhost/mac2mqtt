@@ -40,7 +40,7 @@ type app struct {
 	win  *mygo.Window
 	tray *mygo.Tray
 	// openTrayMenu is retained only while the popup is tracking. Its items
-	// update in place so KeepOpen actions show their new state immediately.
+	// update in place so the status follows MQTT while the menu is open.
 	openTrayMenu *mygo.Menu
 	tab          int
 	latest       system.Snapshot
@@ -386,11 +386,11 @@ func (a *app) trayMenu() *mygo.Menu {
 	items = append(items,
 		mygo.Separator(),
 		&mygo.MenuItem{Label: locales.MenuOpenApp(), Icon: a.menuIcon(iconOverview), Click: func(*mygo.MenuItem, *mygo.Window) { a.showWindow() }},
-		&mygo.MenuItem{ID: "publish", KeepOpen: true, Label: locales.MenuPublishNow(), Icon: a.menuIcon(iconSend), Disabled: st.phase != service.PhaseOnline, Click: func(*mygo.MenuItem, *mygo.Window) { a.publishNow() }},
-		&mygo.MenuItem{ID: "reconnect", KeepOpen: true, Label: locales.MenuReconnect(), Icon: a.menuIcon(iconRefresh), Disabled: !configured || !a.cfg.Reporting.Enabled, Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
-		&mygo.MenuItem{ID: "reporting", KeepOpen: true, Label: pause, Icon: a.menuIcon(pauseGlyph), Disabled: !configured, Click: func(*mygo.MenuItem, *mygo.Window) { a.setReporting(!a.cfg.Reporting.Enabled) }},
+		&mygo.MenuItem{ID: "publish", Label: locales.MenuPublishNow(), Icon: a.menuIcon(iconSend), Disabled: st.phase != service.PhaseOnline, Click: func(*mygo.MenuItem, *mygo.Window) { a.publishNow() }},
+		&mygo.MenuItem{ID: "reconnect", Label: locales.MenuReconnect(), Icon: a.menuIcon(iconRefresh), Disabled: !configured || !a.cfg.Reporting.Enabled, Click: func(*mygo.MenuItem, *mygo.Window) { a.restartService() }},
+		&mygo.MenuItem{ID: "reporting", Label: pause, Icon: a.menuIcon(pauseGlyph), Disabled: !configured, Click: func(*mygo.MenuItem, *mygo.Window) { a.setReporting(!a.cfg.Reporting.Enabled) }},
 		mygo.Separator(),
-		&mygo.MenuItem{ID: "login", KeepOpen: true, Label: locales.OpenAtLoginLabel(), Type: mygo.MenuItemCheckbox, Checked: a.openAtLogin, Icon: a.menuIcon(iconLogin), Click: func(item *mygo.MenuItem, _ *mygo.Window) {
+		&mygo.MenuItem{ID: "login", Label: locales.OpenAtLoginLabel(), Type: mygo.MenuItemCheckbox, Checked: a.openAtLogin, Icon: a.menuIcon(iconLogin), Click: func(item *mygo.MenuItem, _ *mygo.Window) {
 			a.setOpenAtLogin(item.Checked)
 			if a.loginNeedsApproval {
 				openLoginItems()

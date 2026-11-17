@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Tray actions are native menu items again: the KeepOpen views drew their
+  icons, labels and highlight out of line with the rest of the menu. Choosing
+  one closes the menu; the connection badge still updates while it is open.
+
 ## 0.4.15
 
 - Upgrade MyGo to [v0.9.2](https://github.com/egoist/mygo/releases/tag/v0.9.2),
