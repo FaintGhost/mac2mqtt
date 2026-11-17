@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.15
 
 - Upgrade MyGo to [v0.9.2](https://github.com/egoist/mygo/releases/tag/v0.9.2),
   including its single-instance handoff fix when relaunching or updating.
