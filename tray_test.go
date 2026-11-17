@@ -27,7 +27,7 @@ func TestOpenTrayMenuFollowsConnectionAndReportingChanges(t *testing.T) {
 	reconnect := menu.ItemByID("reconnect")
 	reporting := menu.ItemByID("reporting")
 	login := menu.ItemByID("login")
-	if status.Badge != locales.StatusConnected() || publish.Disabled || reconnect.Disabled {
+	if status.Label != locales.StatusConnected() || publish.Disabled || reconnect.Disabled {
 		t.Fatal("connected menu does not offer publishing and reconnecting")
 	}
 
@@ -38,7 +38,7 @@ func TestOpenTrayMenuFollowsConnectionAndReportingChanges(t *testing.T) {
 	if a.openTrayMenu != menu || menu.ItemByID("status") != status {
 		t.Fatal("updating the open menu replaced its items")
 	}
-	if status.Badge != locales.StatusPaused() || !publish.Disabled || !reconnect.Disabled || reporting.Label != locales.MenuResumeReporting() {
+	if status.Label != locales.StatusPaused() || !publish.Disabled || !reconnect.Disabled || reporting.Label != locales.MenuResumeReporting() {
 		t.Fatal("paused menu retained connected actions")
 	}
 
@@ -46,22 +46,36 @@ func TestOpenTrayMenuFollowsConnectionAndReportingChanges(t *testing.T) {
 	a.mqttStatus.Phase = service.PhaseConnecting
 	a.openAtLogin = true
 	a.updateTray()
-	if status.Badge != locales.StatusConnecting() || !publish.Disabled || reconnect.Disabled || reporting.Label != locales.MenuPauseReporting() || !login.Checked {
+	if status.Label != locales.StatusConnecting() || !publish.Disabled || reconnect.Disabled || reporting.Label != locales.MenuPauseReporting() || !login.Checked {
 		t.Fatal("reconnecting menu did not refresh its controls")
 	}
 
 	a.mqttStatus.Phase = service.PhaseOnline
 	a.updateTray()
-	onlineColor := status.BadgeColor
+	onlineIcon := status.Icon
 	a.mqttStatus.LastError = "publish failed"
 	a.updateTray()
-	if status.BadgeColor == onlineColor || status.Badge != locales.StatusConnected() {
-		t.Fatal("a publish failure did not change the connected badge's color")
+	if status.Icon == onlineIcon || status.Label != locales.StatusConnected() {
+		t.Fatal("a publish failure did not change the connected dot's color")
 	}
 
 	a.cfg.Broker.Host = ""
 	a.updateTray()
-	if status.Badge != locales.StatusNotConfigured() || status.Subtitle != "" || !publish.Disabled || !reconnect.Disabled || !reporting.Disabled {
+	if status.Label != locales.StatusNotConfigured() || status.Subtitle != "" || !publish.Disabled || !reconnect.Disabled || !reporting.Disabled {
 		t.Fatal("unconfigured menu retained broker actions")
+	}
+}
+
+func TestTruncateCountsWideCharactersTwice(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"short", "short"},
+		{"abcdefghij", "abcdefghij"},
+		{"abcdefghijk", "abcdefghi…"},
+		{"我的体育老", "我的体育老"},
+		{"我的！体育老师TV版", "我的！体…"},
+	} {
+		if got := truncate(c.in, 10); got != c.want {
+			t.Errorf("truncate(%q, 10) = %q, want %q", c.in, got, c.want)
+		}
 	}
 }

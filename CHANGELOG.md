@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.17
+
+- The tray menu's first item shows the connection state again, with the
+  broker under it and the colored dot before it, instead of a badge that a
+  long media title pushed into the middle of the menu.
+- What plays is shortened by its width: Chinese, Japanese and Korean titles
+  no longer make the menu twice as wide.
+
 ## 0.4.16
 
 - Tray actions are native menu items again: the KeepOpen views drew their

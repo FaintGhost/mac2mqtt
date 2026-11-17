@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
-	"fmt"
+
 	"image/png"
 	"log"
 	"path/filepath"
@@ -12,6 +12,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
@@ -365,11 +367,7 @@ func (a *app) trayMenu() *mygo.Menu {
 	if configured {
 		broker = a.cfg.BrokerAddress()
 	}
-	items := []*mygo.MenuItem{{
-		ID: "status", Label: locales.AppName(), Subtitle: broker,
-		Icon: a.statusDot(st.color), Click: open,
-		Badge: st.label, BadgeShape: mygo.BadgeShapeSquare, BadgeColor: menuBadgeColor(st.color),
-	}}
+	items := []*mygo.MenuItem{{ID: "status", Label: st.label, Subtitle: broker, Icon: a.statusDot(st.color), Click: open}}
 	if m := a.latest.Media; m != nil {
 		items = append(items, &mygo.MenuItem{Label: truncate(m.Title, 40), Subtitle: truncate(m.Artist, 40), Icon: a.menuIcon(iconMusic), Click: open})
 	}
@@ -404,10 +402,6 @@ func (a *app) trayMenu() *mygo.Menu {
 	return mygo.NewMenu(items)
 }
 
-func menuBadgeColor(color ui.Color) string {
-	return fmt.Sprintf("#%02x%02x%02x", color.R, color.G, color.B)
-}
-
 // updateOpenTrayMenu keeps a visible menu consistent with configuration and
 // asynchronous MQTT status changes without replacing the menu under the user.
 func (a *app) updateOpenTrayMenu() {
@@ -422,8 +416,7 @@ func (a *app) updateOpenTrayMenu() {
 		broker = a.cfg.BrokerAddress()
 	}
 	status := menu.ItemByID("status")
-	status.SetBadge(st.label)
-	status.SetBadgeColor(menuBadgeColor(st.color))
+	status.SetLabel(st.label)
 	status.SetIcon(a.statusDot(st.color))
 	status.SetSubtitle(broker)
 	menu.ItemByID("publish").SetEnabled(st.phase == service.PhaseOnline)
@@ -506,12 +499,34 @@ func (a *app) cachedMenuIcon(key any, template bool, draw func(c *ui.Context)) *
 	return icon
 }
 
+// truncate shortens s to n columns, as a menu shows them: wide characters,
+// as Chinese or Japanese ones, take two.
 func truncate(s string, n int) string {
-	r := []rune(s)
-	if len(r) <= n {
-		return s
+	w := 0
+	for i, r := range s {
+		w += runeWidth(r)
+		if w > n {
+			// Leave a column for the ellipsis.
+			cut, cw := s[:i], w-runeWidth(r)
+			for cw > n-1 {
+				last, size := utf8.DecodeLastRuneInString(cut)
+				cut, cw = cut[:len(cut)-size], cw-runeWidth(last)
+			}
+			return cut + "…"
+		}
 	}
-	return string(r[:n-1]) + "…"
+	return s
+}
+
+// runeWidth is how many columns r takes: two for East Asian wide and
+// fullwidth characters, one for the rest.
+func runeWidth(r rune) int {
+	if unicode.Is(unicode.Han, r) || unicode.Is(unicode.Hangul, r) ||
+		unicode.Is(unicode.Hiragana, r) || unicode.Is(unicode.Katakana, r) ||
+		(r >= 0x3000 && r <= 0x303f) || (r >= 0xff00 && r <= 0xff60) || (r >= 0xffe0 && r <= 0xffe6) {
+		return 2
+	}
+	return 1
 }
 
 func (a *app) installMenu() {
