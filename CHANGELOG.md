@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.18
 
 - The Volume and Mute entities follow the output sound plays through. A
   monitor over HDMI has no volume control, so they leave Home Assistant,
