@@ -21,6 +21,7 @@ func testOptions() Options {
 		HasBattery:    true,
 		HasCamera:     true,
 		HasMicrophone: true,
+		HasVolume:     true,
 	}
 }
 
@@ -107,6 +108,51 @@ func TestSystemEntitiesExpectedEntities(t *testing.T) {
 	}
 	if byID["last_update"].Config["device_class"] != "timestamp" {
 		t.Errorf("last update = %+v", byID["last_update"])
+	}
+}
+
+// The state document leaves audio out when sound plays through an output
+// with no volume control. A template reading a field of it without checking
+// it is there makes Home Assistant log a template error, and take the whole
+// payload for the value, which is not a Number.
+func TestTemplatesGuardFieldsThePayloadMayLeaveOut(t *testing.T) {
+	optional := []string{"audio"}
+	for _, entity := range AllEntities(testOptions()) {
+		template, _ := entity.Config["value_template"].(string)
+		for _, field := range optional {
+			if !strings.Contains(template, "value_json."+field+".") {
+				continue
+			}
+			if !strings.Contains(template, "value_json."+field+" is defined") {
+				t.Errorf("%s reads %s without checking it is defined: %q", entity.ObjectID, field, template)
+			}
+		}
+	}
+}
+
+// Sound through an output with no volume control leaves the Volume and Mute
+// entities out: Home Assistant would show controls the Mac cannot carry out.
+func TestOutputWithoutAVolumeControlHasNoVolumeEntities(t *testing.T) {
+	opts := testOptions()
+	opts.HasVolume = false
+	entities := SystemEntities(opts)
+	if len(entities) != 28 {
+		t.Fatalf("entities = %d, want 28", len(entities))
+	}
+	for _, entity := range entities {
+		if entity.ObjectID == "volume" || entity.ObjectID == "mute" {
+			t.Errorf("%s is published for an output with no volume control", entity.ObjectID)
+		}
+	}
+	// Their descriptions stay known, so that the retained discovery of an
+	// output that had a volume control is cleared when sound moves to one
+	// that has none.
+	all := make(map[string]bool)
+	for _, entity := range AllEntities(opts) {
+		all[entity.ObjectID] = true
+	}
+	if !all["volume"] || !all["mute"] {
+		t.Errorf("all entities leave out volume or mute: %v", all)
 	}
 }
 

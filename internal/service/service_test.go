@@ -505,6 +505,25 @@ func published(c *fakeClient, topic string) bool {
 	return false
 }
 
+// lastMessage is the last message published on topic, and whether one was.
+func lastMessage(c *fakeClient, topic string) (publishedMessage, bool) {
+	var last publishedMessage
+	found := false
+	for _, msg := range c.messages() {
+		if msg.topic == topic {
+			last, found = msg, true
+		}
+	}
+	return last, found
+}
+
+// lastBody is the body of the last message published on topic: an empty body
+// clears a retained one.
+func lastBody(c *fakeClient, topic string) ([]byte, bool) {
+	msg, ok := lastMessage(c, topic)
+	return msg.body, ok
+}
+
 func discoveryCount(c *fakeClient) int {
 	n := 0
 	for _, msg := range c.messages() {
@@ -1067,6 +1086,115 @@ func TestManagerSaysOfflineAsTheMacSleepsAndOnlineAsItWakes(t *testing.T) {
 	if back := msgs[before]; back.topic != "mac2mqtt/test/availability" || string(back.body) != "online" {
 		t.Errorf("first message on waking = %s %q, want availability online", back.topic, back.body)
 	}
+}
+
+// The Volume and Mute entities follow the output sound plays through: a
+// monitor over HDMI has no volume control, so they leave Home Assistant,
+// and come back with the Mac mini's own speakers, whose commands work then.
+func TestVolumeEntitiesFollowWhetherTheOutputHasAVolumeControl(t *testing.T) {
+	fake := newFakeClient()
+	var mu sync.Mutex
+	snapshot := testSnapshot()
+	volumes := make(chan int, 1)
+	m := runManager(t, Options{
+		Config:  testConfig(),
+		Version: "0.1.0",
+		Snapshot: func(context.Context) system.Snapshot {
+			mu.Lock()
+			defer mu.Unlock()
+			return snapshot
+		},
+		NewClient:  func(broker.Config) broker.Client { return fake },
+		SetVolume:  func(_ context.Context, v int) error { volumes <- v; return nil },
+		RetryDelay: 10 * time.Millisecond,
+	})
+	volumeConfig := "homeassistant/number/mac2mqtt-test/volume/config"
+	volumeSet := "mac2mqtt/test/volume/set"
+	setAudio := func(audio *system.AudioState) {
+		mu.Lock()
+		snapshot.Audio = audio
+		mu.Unlock()
+		m.PublishNow()
+	}
+
+	// The Mac mini's speakers have a volume control.
+	waitFor(t, func() bool {
+		body, ok := lastBody(fake, volumeConfig)
+		return ok && len(body) > 0 && fake.handler(volumeSet) != nil
+	})
+
+	// Sound moves to the monitor, which has none.
+	setAudio(nil)
+	waitFor(t, func() bool {
+		body, ok := lastBody(fake, volumeConfig)
+		return ok && len(body) == 0
+	})
+
+	// And back to the speakers.
+	setAudio(&system.AudioState{Volume: 35})
+	waitFor(t, func() bool {
+		body, ok := lastBody(fake, volumeConfig)
+		return ok && len(body) > 0
+	})
+	handler := fake.handler(volumeSet)
+	if handler == nil {
+		t.Fatal("the volume command topic is not subscribed after the output gained a volume control")
+	}
+	handler(broker.Message{Topic: volumeSet, Payload: []byte("42")})
+	waitFor(t, func() bool { return len(volumes) == 1 && <-volumes == 42 })
+}
+
+// The media player's volume slider follows the output as the Volume entity
+// does: an output with no volume control leaves no value of the last output's
+// in the retained topic the MQTT Media Player integration reads.
+func TestMediaVolumeIsClearedWithoutAVolumeControl(t *testing.T) {
+	fake := newFakeClient()
+	var mu sync.Mutex
+	snapshot := testSnapshot()
+	media := &system.MediaInfo{State: "playing", Title: "Song"}
+	m := runManager(t, Options{
+		Config:  testConfig(),
+		Version: "0.1.0",
+		Snapshot: func(context.Context) system.Snapshot {
+			mu.Lock()
+			defer mu.Unlock()
+			return snapshot
+		},
+		Media:      func(context.Context) *system.MediaInfo { return media },
+		NewClient:  func(broker.Config) broker.Client { return fake },
+		RetryDelay: 10 * time.Millisecond,
+	})
+	volumeTopic := "mac2mqtt/test/media/volume"
+	muteTopic := "mac2mqtt/test/media/mute"
+	setAudio := func(audio *system.AudioState) {
+		mu.Lock()
+		snapshot.Audio = audio
+		mu.Unlock()
+		m.PublishNow()
+	}
+
+	waitFor(t, func() bool {
+		body, ok := lastBody(fake, volumeTopic)
+		return ok && string(body) == "0.35"
+	})
+
+	// Sound moves to the monitor, which has none.
+	setAudio(nil)
+	waitFor(t, func() bool {
+		volume, ok := lastMessage(fake, volumeTopic)
+		if !ok || len(volume.body) != 0 || !volume.retain {
+			return false
+		}
+		mute, ok := lastMessage(fake, muteTopic)
+		return ok && len(mute.body) == 0 && mute.retain
+	})
+
+	// And back to the speakers.
+	setAudio(&system.AudioState{Volume: 35})
+	waitFor(t, func() bool {
+		body, ok := lastBody(fake, volumeTopic)
+		return ok && string(body) == "0.35"
+	})
 }
 
 func TestManagerOffersAndSetsTheAudioOutput(t *testing.T) {

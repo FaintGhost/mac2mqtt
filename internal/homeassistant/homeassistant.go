@@ -84,6 +84,9 @@ type Options struct {
 	// Outputs are the devices sound can play through, which the Audio
 	// Output select offers; with none it is left out.
 	Outputs []string
+	// HasVolume adds the Volume and Mute entities: an output such as a
+	// monitor over HDMI has no volume control, and mute follows the volume.
+	HasVolume bool
 	// Unlock publishes the screen as a lock that unlocks too, with a PIN,
 	// in place of the Screen Lock sensor and the Lock Screen button.
 	Unlock bool
@@ -103,7 +106,11 @@ const (
 	stateAppVersion   = "{{ value_json.app.version | default('unknown') }}"
 	stateHostname     = "{{ value_json.device.hostname | default('unknown') }}"
 	stateIdleTime     = "{{ value_json.session.idle_seconds | default('unknown') }}"
-	stateVolume       = "{{ value_json.audio.volume | default('unknown') }}"
+	// The document leaves audio out when sound plays through an output with
+	// no volume control, which takes the entity away. Should one arrive
+	// anyway, the empty state is ignored, where "unknown" is logged as a
+	// payload that is not a Number.
+	stateVolume = "{% if value_json.audio is defined and value_json.audio.volume is defined and value_json.audio.volume is not none %}{{ value_json.audio.volume }}{% endif %}"
 	// A sensor's state is at most 255 characters.
 	stateNowPlaying = "{{ value_json.media_title | default('') | truncate(255, true, '') }}"
 
@@ -160,6 +167,7 @@ func SystemEntities(opts Options) []Entity {
 		}
 		if entity.ObjectID == "run_shortcut" && len(opts.Shortcuts) == 0 ||
 			entity.ObjectID == "audio_output" && len(opts.Outputs) == 0 ||
+			(entity.ObjectID == "volume" || entity.ObjectID == "mute") && !opts.HasVolume ||
 			entity.ObjectID == "camera_in_use" && !opts.HasCamera ||
 			entity.ObjectID == "microphone_in_use" && !opts.HasMicrophone {
 			continue

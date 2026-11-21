@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- The Volume and Mute entities follow the output sound plays through. A
+  monitor over HDMI has no volume control, so they leave Home Assistant,
+  whose Volume entity logged a template error on every publish and then read
+  the whole state document as its value; they come back with the Mac's own
+  speakers, whose commands work at once. The media player's volume slider
+  follows them, cleared rather than left at the last output's value.
+- Upgrade MyGo to [v0.10.0](https://github.com/egoist/mygo/releases/tag/v0.10.0):
+  menus that stay open leave no empty space after their badges and highlight
+  end to end, attached popups fit the window, a triple click selects a
+  paragraph, and pasted text with old Mac line endings breaks lines.
+
 ## 0.4.17
 
 - The tray menu's first item shows the connection state again, with the

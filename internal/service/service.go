@@ -128,6 +128,10 @@ type Manager struct {
 	discovered   string
 	discoveredAt time.Time
 	lastProbe    system.Snapshot
+	// subscribed are the command topics this connection listens to, which
+	// entities appearing after connect add to. Owned by the goroutine
+	// running Run.
+	subscribed map[string]bool
 }
 
 type commandRequest struct {
@@ -316,6 +320,28 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 		m.lastMedia, m.mediaSet = media, true
 		report(m.publishMedia(ctx, client, media))
 	}
+	// publishStateAndDiscovery publishes the state, and discovery with it
+	// when it fell behind: one that failed to publish, or the entities the
+	// output changed. An output with no volume control, a monitor over HDMI
+	// for instance, takes the Volume and Mute entities and the media
+	// player's volume away; an output that has one brings them back.
+	publishStateAndDiscovery := func() {
+		hadVolume := m.lastProbe.Audio != nil
+		snapshot, err := m.publishState(ctx, client)
+		if err != nil {
+			report(err)
+			return
+		}
+		m.lastProbe.Audio = snapshot.Audio
+		volumeChanged := (snapshot.Audio != nil) != hadVolume
+		if volumeChanged {
+			// The media player repeats the volume and mute.
+			m.refreshMedia()
+		}
+		if volumeChanged || m.discovered == "" {
+			report(m.publishDiscovery(ctx, client, false))
+		}
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -324,16 +350,12 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 			m.setPhase(PhaseConnecting, "connection lost; reconnecting")
 			return true
 		case <-ticker.C:
-			// Discovery that failed to publish is tried again.
-			if m.discovered == "" {
-				report(m.publishDiscovery(ctx, client, false))
-			}
-			report(m.publishState(ctx, client))
+			publishStateAndDiscovery()
 			if m.mediaEnabled() {
 				readMedia()
 			}
 		case <-m.publish:
-			report(m.publishState(ctx, client))
+			publishStateAndDiscovery()
 		case done := <-m.suspend:
 			m.publishOffline(client)
 			m.publishMu.Lock()
@@ -347,7 +369,7 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 				continue
 			}
 			report(m.publishDiscovery(ctx, client, true))
-			report(m.publishState(ctx, client))
+			publishStateAndDiscovery()
 			if m.mediaEnabled() {
 				readMedia()
 			}
@@ -371,7 +393,7 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 				// offers it, before the state names it.
 				report(m.publishDiscovery(ctx, client, false))
 			}
-			report(m.publishState(ctx, client))
+			publishStateAndDiscovery()
 		case <-mediaC:
 			media := m.opts.Media(ctx)
 			if m.mediaSet && sameMedia(m.lastMedia, media) {
@@ -379,7 +401,7 @@ func (m *Manager) runConnected(ctx context.Context, client broker.Client) bool {
 			}
 			m.lastMedia, m.mediaSet = media, true
 			report(m.publishMedia(ctx, client, media))
-			report(m.publishState(ctx, client))
+			publishStateAndDiscovery()
 		}
 	}
 }
@@ -399,15 +421,10 @@ func (m *Manager) afterConnect(ctx context.Context, client broker.Client) error 
 		m.lastActivity = m.opts.Activity()
 	}
 	entities := m.entities(probe)
+	m.subscribed = map[string]bool{}
 	var topics []string
-	subscribed := map[string]bool{}
 	for _, entity := range entities {
-		for _, topic := range entity.CommandTopics() {
-			if !subscribed[topic] {
-				subscribed[topic] = true
-				topics = append(topics, topic)
-			}
-		}
+		topics = append(topics, m.newCommandTopics(entity)...)
 	}
 	// Home Assistant announces itself on its status topic as it starts:
 	// discovery is then published again.
@@ -431,8 +448,10 @@ func (m *Manager) afterConnect(ctx context.Context, client broker.Client) error 
 	}
 	// Like discovery, a state that does not publish now is published with
 	// the next report, on the same connection.
-	if err := m.publishState(setupCtx, client); err != nil {
+	if snapshot, err := m.publishState(setupCtx, client); err != nil {
 		m.setLastError(friendlyError(err))
+	} else {
+		m.lastProbe.Audio = snapshot.Audio
 	}
 	if m.mediaEnabled() {
 		m.lastMedia = probe.Media
@@ -455,6 +474,12 @@ func (m *Manager) haStatusTopic() string {
 // changed, or force asks, as when Home Assistant starts.
 func (m *Manager) publishDiscovery(ctx context.Context, client broker.Client, force bool) error {
 	entities := m.entities(m.lastProbe)
+	subscribeCtx, cancelSubscribe := context.WithTimeout(ctx, 30*time.Second)
+	err := m.subscribeCommands(subscribeCtx, client, entities)
+	cancelSubscribe()
+	if err != nil {
+		return err
+	}
 	var batch []broker.Publication
 	clear := func(topic string) {
 		if topic != "" {
@@ -506,6 +531,43 @@ func (m *Manager) publishDiscovery(ctx context.Context, client broker.Client, fo
 		return fmt.Errorf("publish discovery: %w", err)
 	}
 	m.discovered, m.discoveredAt = sum, time.Now()
+	return nil
+}
+
+// newCommandTopics lists the topics of an entity's commands the connection
+// does not listen to yet, and marks them listened to.
+func (m *Manager) newCommandTopics(entity homeassistant.Entity) []string {
+	var topics []string
+	for _, topic := range entity.CommandTopics() {
+		if m.subscribed[topic] {
+			continue
+		}
+		m.subscribed[topic] = true
+		topics = append(topics, topic)
+	}
+	return topics
+}
+
+// subscribeCommands subscribes to the commands of entities that appeared
+// after the connection subscribed: the Volume entity comes back with an
+// output that has a volume control again, and its slider must work at once.
+// A failure leaves them unmarked, for the next discovery to try again.
+func (m *Manager) subscribeCommands(ctx context.Context, client broker.Client, entities []homeassistant.Entity) error {
+	var topics []string
+	for _, entity := range entities {
+		topics = append(topics, m.newCommandTopics(entity)...)
+	}
+	if len(topics) == 0 {
+		return nil
+	}
+	if err := client.SubscribeAll(ctx, topics, 1, func(msg broker.Message) {
+		m.handleCommand(client, msg)
+	}); err != nil {
+		for _, topic := range topics {
+			delete(m.subscribed, topic)
+		}
+		return fmt.Errorf("subscribe: %w", err)
+	}
 	return nil
 }
 
@@ -662,7 +724,7 @@ func (m *Manager) executeCommand(ctx context.Context, req commandRequest) {
 		m.setLastError(friendlyError(err))
 		return
 	}
-	if pubErr := m.publishState(commandCtx, req.client); pubErr != nil {
+	if _, pubErr := m.publishState(commandCtx, req.client); pubErr != nil {
 		m.setLastError(friendlyError(pubErr))
 		return
 	}
@@ -835,6 +897,14 @@ func (m *Manager) publishMedia(ctx context.Context, client broker.Client, media 
 		{Topic: stateTopic, Payload: []byte(state), Retain: retain, QoS: 1},
 		{Topic: attributesTopic, Payload: payload, Retain: retain, QoS: 1},
 	}
+	if audio == nil {
+		// An output with no volume control: the last output's value is
+		// cleared, retained, so that the slider the MQTT Media Player
+		// integration shows does not keep it.
+		batch = append(batch,
+			broker.Publication{Topic: base + "volume", Retain: true, QoS: 1},
+			broker.Publication{Topic: base + "mute", Retain: true, QoS: 1})
+	}
 	for _, field := range mediaFields {
 		if value, ok := fields[field]; ok {
 			batch = append(batch, broker.Publication{Topic: base + field, Payload: []byte(value), Retain: retain, QoS: 1})
@@ -870,9 +940,9 @@ func sameMedia(a, b *system.MediaInfo) bool {
 		a.CanNext == b.CanNext && a.CanPrevious == b.CanPrevious
 }
 
-func (m *Manager) publishState(ctx context.Context, client broker.Client) error {
+func (m *Manager) publishState(ctx context.Context, client broker.Client) (system.Snapshot, error) {
 	if m.opts.Snapshot == nil {
-		return fmt.Errorf("no status collector configured")
+		return system.Snapshot{}, fmt.Errorf("no status collector configured")
 	}
 	// Snapshot, marshal and publish as one ordered unit. Otherwise a slow
 	// periodic snapshot could overwrite a newer command-triggered state.
@@ -884,7 +954,7 @@ func (m *Manager) publishState(ctx context.Context, client broker.Client) error 
 		err := client.Publish(onlineCtx, m.opts.Config.AvailabilityTopic(), []byte("online"), true, 1)
 		cancel()
 		if err != nil {
-			return fmt.Errorf("publish availability: %w", err)
+			return system.Snapshot{}, fmt.Errorf("publish availability: %w", err)
 		}
 		m.wentOffline = false
 	}
@@ -895,12 +965,12 @@ func (m *Manager) publishState(ctx context.Context, client broker.Client) error 
 	}
 	payload, err := json.Marshal(snapshot)
 	if err != nil {
-		return fmt.Errorf("encode state: %w", err)
+		return snapshot, fmt.Errorf("encode state: %w", err)
 	}
 	publishCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 	if err := client.Publish(publishCtx, m.opts.Config.StateTopic(), payload, m.opts.Config.Reporting.Retain, 1); err != nil {
-		return fmt.Errorf("publish state: %w", err)
+		return snapshot, fmt.Errorf("publish state: %w", err)
 	}
 	m.mu.Lock()
 	m.status.LastPublish = time.Now()
@@ -911,7 +981,7 @@ func (m *Manager) publishState(ctx context.Context, client broker.Client) error 
 	if m.opts.OnStatus != nil {
 		m.opts.OnStatus(status)
 	}
-	return nil
+	return snapshot, nil
 }
 
 func (m *Manager) publishOffline(client broker.Client) {
@@ -958,7 +1028,9 @@ func (m *Manager) entityOptions(probe system.Snapshot) homeassistant.Options {
 		HasCamera:     m.lastActivity.HasCamera,
 		HasMicrophone: m.lastActivity.HasMicrophone,
 		Outputs:       m.lastActivity.OutputNames(),
-		Unlock:        m.opts.UnlockScreen != nil,
+		// An output such as a monitor over HDMI has no volume control.
+		HasVolume: probe.Audio != nil,
+		Unlock:    m.opts.UnlockScreen != nil,
 		// What the app's UnlockScreen checks, Home Assistant asks for.
 		UnlockWithoutPIN: cfg.HomeAssistant.UnlockWithoutPIN,
 	}
